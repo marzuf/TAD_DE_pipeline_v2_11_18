@@ -51,6 +51,21 @@ printAndLog <- function(txt, logFile){
 }
 
 ######################################################################################################################################################################################################
+###################################################################################################################################################################################################### densplot (function)
+######################################################################################################################################################################################################
+
+densplot <- function(x,y, pch=19, cex=1, ...){
+	df <- data.frame(x,y)
+	d <- densCols(x,y, colramp=colorRampPalette(c("black", "white")))
+	df$dens <- col2rgb(d)[1,] + 1L
+	cols <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F","#FCFF00", "#FF9400", "#FF3100"))(256)
+	df$col <- cols[df$dens]
+	df <- df[order(df$dens),]
+	plot(df$x,df$y, pch=pch, col=df$col, ...)
+}
+
+
+######################################################################################################################################################################################################
 ###################################################################################################################################################################################################### plot_multiDens (function)
 ######################################################################################################################################################################################################
 
@@ -142,6 +157,52 @@ plot_cumsumDiff05_returnVect <- function(observ_vect, permut_DT, pointObsCol = "
 
   return(cumsum(abs(observ_vect - departureValue)))
 }
+
+######################################################################################################################################################################################################
+###################################################################################################################################################################################################### CANCER SUBTYPES (vector)
+######################################################################################################################################################################################################
+
+cancer_subAnnot <- c(
+"TCGAstad_msi_gs" = "subtypes",
+"GSE79209_dysp_nodysp" = "lesions",
+"GSE58135_tripleNeg_adjTripleNeg" = "vs_normal",
+"GSE40419_normal_cancer" = "vs_normal",
+"TCGAstad_EBVneg_EBVpos" = "subtypes",
+"GSE77509_normal_ptt" = "vs_normal",
+"GSE77509_normal_tumor" = "vs_normal",
+"GSE77314_normal_tumor" = "vs_normal",
+"GSE71119_dediffSM_MFSM" = "subtypes",
+"GSE58135_ERpos_adjERpos" = "vs_normal",
+"GSE58135_ERpos_tripleNeg" = "subtypes",
+"GSE71119_undiffSM_LMSM" = "subtypes",
+"TCGAlaml_laml_mutFLT3" = "mutation",
+"TCGAthca_thca_mutBRAF" = "mutation",
+"TCGAlihc_lihc_mutCTNNB1" = "mutation",
+"GSE77509_ptt_tumor" = "vs_other",
+"GSE87340_ad_nl" = "vs_normal",
+"GSE81089_normal_nsclc" = "vs_normal",
+"TCGApaad_paad_mutKRAS" = "mutation",
+"TCGAucec_msi_cnl" = "subtypes",        
+"TCGAbrca_lum_bas" = "subtypes",
+"TCGAskcm_skcm_mutBRAF" = "mutation",
+"TCGAluad_luad_mutKRAS" = "mutation",
+"TCGAskcm_skcm_mutCTNNB1" = "mutation",        
+"TCGAacc_acc_mutCTNNB1" = "mutation",
+"GSE74927_neg_pos" = "subtypes",
+"TCGAcrc_msi_mss" =  "subtypes",
+"GSE102073_stic_nostic" = "lesions"    
+)
+
+cancer_subColors <- c(
+subtypes = "green4",
+lesions = "chocolate1",
+vs_normal = "blue3",
+vs_other = "orchid1",
+mutation = "red"
+)
+
+stopifnot(cancer_subAnnot %in% names(cancer_subColors))
+
 
 ######################################################################################################################################################################################################
 ###################################################################################################################################################################################################### MAPPING ALIASES FOR GO VARIABLES (nTop) (vector)

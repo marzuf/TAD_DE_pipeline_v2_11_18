@@ -949,7 +949,7 @@ for(curr_ds in unique(all_ds_DT$dataset)) {
                                        varIntersect = paste0("nIntersectGenes_", geneType),
                                        tit = curr_ds,
                                        # subTit = paste0(GO_aliases_common_top[gsub(paste0("Genes_", geneType), "", paste0("nTopGenes_", geneType))], " - ", geneType),
-                                       subTit = paste0(GO_aliases_common_top[gsub(paste0("Genes_", geneType), "", paste0("nTopGenes_", geneType))]),
+                                       subTit = paste0(GO_aliases_common_top[gsub(paste0("Genes_", geneType), "", paste0("nTopGenes_", geneType))], " (nTopTADs = ", ds_dt$nTopTADs,")"),
                                        dataDT = ds_dt)
     
     curr_var="signifGOid"
@@ -1403,7 +1403,9 @@ for(ref_var in ref_vars){
     add_curv_fit(x=myx,
                  y=myy, withR2 = F, lty=2)
     addCorr(x=myx,
-            y=myy, legPos = "topleft", bty="n")
+            y=myy, legPos = "topleft",
+            corMet="spearman",
+            bty="n")
     text(x = myx, 
          y = myy, 
          labels = all_ds_DT[,"dataset"], 
@@ -1588,7 +1590,7 @@ myylab <- GO_aliases_common_top[var_to_plot]
       #                    label = c("p.format"))+
       theme(plot.title = element_text(hjust = 0.5, face = "bold"))
     
-    outFile <- file.path(outFold, paste0(var_to_plot, "_boxplot.", plotType))
+    outFile <- file.path(outFold, paste0(var_to_plot, "_violinplot.", plotType))
     ggsave(plot = p_box, filename = outFile, height=myHeightGG, width = myWidthGG)
     cat(paste0("... written: ", outFile, "\n"))
     

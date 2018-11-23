@@ -719,7 +719,7 @@ for(curr_ds in unique(all_ds_DT$dataset)) {
               var2="nSelectTADs_genes", 
               varIntersect = "nIntersectGenes",
               tit = curr_ds,
-              subTit = GO_aliases_common_pvalSelect[gsub("Genes", "", "nSelectGenes")],
+              subTit = paste0(GO_aliases_common_pvalSelect[gsub("Genes", "", "nSelectGenes")], " (nSelectTADs = ", ds_dt$nSelectTADs, ")"),
               dataDT = ds_dt)
   
   curr_var="signifGOid"
@@ -1172,7 +1172,7 @@ for(ref_var in ref_vars){
     add_curv_fit(x=myx,
                  y=myy, withR2 = F, lty=2)
     addCorr(x=myx,
-            y=myy, legPos = "topleft", bty="n")
+            y=myy, legPos = "topleft", corMet="spearman", bty="n")
     text(x = myx, 
          y = myy, 
          labels = all_ds_DT[,"dataset"], 
