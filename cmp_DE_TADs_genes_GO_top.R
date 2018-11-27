@@ -972,7 +972,7 @@ for(curr_ds in unique(all_ds_DT$dataset)) {
     all_vds <- do.call(arrangeGrob, c(all_VDs, nrow=2))
     finalVD <- arrangeGrob(all_vds, ncol = 1, top = titGrob)
     
-    outFile <- file.path(outFold, paste0("intersect_", geneType, "_", curr_ds, "_venn_diagram.", plotType))
+    outFile <- file.path(outFold, paste0("GOtype", enricher_ontologyType, "_nTopDS", nTopDS, "_rankVar", rankVar, "_intersect_", geneType, "_", curr_ds, "_venn_diagram.", plotType))
     ggsave(finalVD, file = outFile, height = vdHeight, width = vdWidth)
     foo <- dev.off()
     cat(paste0("... written: ", outFile, "\n"))
@@ -1031,7 +1031,7 @@ for(geneType in c("manyAsTopTADs", "manyAsPercent")) {
     )
   if(SSHFS) p_intersect
   
-  outFile <- file.path(outFold, paste0("all_ds_intersect_",geneType, "_barplot.", plotType))
+  outFile <- file.path(outFold, paste0("GOtype", enricher_ontologyType, "_nTopDS", nTopDS, "_rankVar", rankVar, "_all_ds_intersect_",geneType, "_barplot.", plotType))
   ggsave(plot = p_intersect, filename = outFile, height=myHeightGG, width = myWidthGG)
   cat(paste0("... written: ", outFile, "\n"))
 }
@@ -1080,7 +1080,7 @@ for(curr_ds in unique(all_ds_DT$dataset)) {
       
       resultDT <- resultDT[order(resultDT[,var_plot], decreasing=TRUE),]
       
-      outFile <- file.path(outFold,paste0(curr_ds, "_", curr_type, "_top", nTopResultsToSave, "_GO", var_plot, ".", plotType))
+      outFile <- file.path(outFold,paste0("GOtype", enricher_ontologyType, "_nTopDS", nTopDS, "_rankVar", rankVar, "_", curr_ds, "_", curr_type, "_top", nTopResultsToSave, "_GO", var_plot, ".", plotType))
       do.call(plotType, list(outFile, height = myHeight*1.2, width = myWidth*1.2))    
       par(oma=c(10,1,1,1))
       barplot(resultDT[,var_plot],
@@ -1209,7 +1209,7 @@ cat("helloGG\n")
     
     if(SSHFS) p_DS
     
-    outFile <- file.path(outFold,paste0(curr_ds, "_", curr_type, "_top", nTopResultsToSave, "_GO", var_plot, "_topGenes_topTADs.", plotType))
+    outFile <- file.path(outFold,paste0("GOtype", enricher_ontologyType, "_nTopDS", nTopDS, "_rankVar", rankVar, "_", curr_ds, "_", curr_type, "_top", nTopResultsToSave, "_GO", var_plot, "_topGenes_topTADs.", plotType))
     ggsave(p_DS, filename = outFile, height = myHeightGG, width=myWidthGG)
     cat(paste0("... written: ", outFile, "\n"))
     
@@ -1278,7 +1278,7 @@ for(var_plot in barplot_vars) {
   
   if(SSHFS) p_all
   
-  outFile <- file.path(outFold,paste0("allDS_typeComp", "_top", nTopResultsToSave, "_GO", var_plot, "_boxplot.", plotType))
+  outFile <- file.path(outFold,paste0("GOtype", enricher_ontologyType, "_nTopDS", nTopDS, "_rankVar", rankVar, "_allDS_typeComp", "_top", nTopResultsToSave, "_GO", var_plot, "_boxplot.", plotType))
   ggsave(p_all, filename = outFile, height = myHeightGG, width=myWidthGG)
   cat(paste0("... written: ", outFile, "\n"))
   
@@ -1319,7 +1319,7 @@ for(var_plot in barplot_vars) {
   
   if(SSHFS) p_all
   
-  outFile <- file.path(outFold,paste0("allDS_typeComp", "_top", nTopResultsToSave, "_GO", var_plot, "_boxplot_nojitter.", plotType))
+  outFile <- file.path(outFold,paste0("GOtype", enricher_ontologyType, "_nTopDS", nTopDS, "_rankVar", rankVar, "_allDS_typeComp", "_top", nTopResultsToSave, "_GO", var_plot, "_boxplot_nojitter.", plotType))
   ggsave(p_all, filename = outFile, height = myHeightGG, width=myWidthGG)
   cat(paste0("... written: ", outFile, "\n"))
   
@@ -1392,7 +1392,7 @@ for(ref_var in ref_vars){
     
     curr_colors <- dataset_proc_colors[as.character(all_ds_DT$dataset)]
     
-    outFile <- file.path(outFold, paste0(ref_var, "_", curr_var, ".", plotType))
+    outFile <- file.path(outFold, paste0("GOtype", enricher_ontologyType, "_nTopDS", nTopDS, "_rankVar", rankVar, "_", ref_var, "_", curr_var, ".", plotType))
     do.call(plotType, list(outFile, height = myHeight, width = myWidth))
     plot(x=myx,
          y=myy,
@@ -1548,7 +1548,7 @@ for(var_to_plot in all_vars_toplot){
         legend.key = element_blank()
       )
     
-    outFile <- file.path(outFold, paste0(var_to_plot, "_barplot.", plotType))
+    outFile <- file.path(outFold, paste0("GOtype", enricher_ontologyType, "_nTopDS", nTopDS, "_rankVar", rankVar, "_", var_to_plot, "_barplot.", plotType))
     ggsave(plot = p_var, filename = outFile, height=myHeightGG, width = myWidthGG)
     cat(paste0("... written: ", outFile, "\n"))
     
@@ -1562,12 +1562,13 @@ x <- combn(unique(plotDT_m$variable_leg),2)
 my_comparisons <- lapply(seq_len(ncol(x)), function(i) unlist(x[,i]))
 
 myylab <- GO_aliases_common_top[var_to_plot]
-
+    mysubtit <- paste0("all datasets (n=", length(unique(plotDT_m$dataset)), ")")
 
     p_box <- ggviolin(plotDT_m, x = "variable_leg", y = "value", 
                       fill = "variable_leg",
                       palette = c("#00AFBB", "#E7B800", "#FC4E07"),
                       title = plotTit,
+                      subtitle = mysubtit,
                       xlab="",
                       ylab = myylab,
                       # sub=mySub,
@@ -1588,9 +1589,9 @@ myylab <- GO_aliases_common_top[var_to_plot]
       #                    label.y.npc=0,
       #                    method="wilcox",
       #                    label = c("p.format"))+
-      theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+      theme(plot.title = element_text(hjust = 0.5, face = "bold"), plot.subtitle = element_text(hjust = 0.5))
     
-    outFile <- file.path(outFold, paste0(var_to_plot, "_violinplot.", plotType))
+    outFile <- file.path(outFold, paste0("GOtype", enricher_ontologyType, "_nTopDS", nTopDS, "_rankVar", rankVar, "_", var_to_plot, "_violinplot.", plotType))
     ggsave(plot = p_box, filename = outFile, height=myHeightGG, width = myWidthGG)
     cat(paste0("... written: ", outFile, "\n"))
     

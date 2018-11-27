@@ -337,72 +337,83 @@ for(ref_var in c("coexprDistAUC", "fccAUC")) {
 
 # just to check: # DE genes and meanMostVar
 
-curr_var <- "nSignifGenes"
-ref_var <- "meanMostVar" 
+#all_curr_vars <- c("nSignifGenes", "nSignifTADs")
+#ref_var <- "meanMostVar" 
 
-myx <- log10(datasets_variables_DT[, curr_var]+1)
-myy <- datasets_variables_DT[, ref_var]
-
-outFile <- file.path(outFold, paste0(ref_var, "_", curr_var, "_log10.", plotType))
-do.call(plotType, list(outFile, height = myHeight, width = myWidth))
-my_plot_function(varX = myx, varY=myy, 
-                 mylabels = as.character(rownames(datasets_variables_DT)), 
-                 withLab=F,
-                 main = paste0(titNames[ref_var], " vs. ", titNames[curr_var]),
-                 xlab = paste0(titNames[curr_var], "(log10[#+1])" ),
-                 ylab = paste0(titNames[ref_var]),
-                 xlim = range(myx) + c(-1,1),# + c(-log10(xoffset[curr_var]), log10(xoffset[curr_var])),
-                 ylim = range(myy) + c(-offSets[ref_var], offSets[ref_var])
+all_cmps <- list(
+c(curr_var = "nSignifGenes", ref_var= "meanMostVar"),
+c(curr_var = "nSignifTADs", ref_var= "meanMostVar"),
+c(curr_var = "nSignifGenes", ref_var= "nSignifTADs")
 )
-text(x = myx, y = myy,
-     labels =  as.character(rownames(datasets_variables_DT)), 
-     pch=16,
-     col = curr_colors,
-     bty="n",
-     cex=0.7)
-mtext(side=3, text = mySub)
-legend("bottomright",
-       legend=names(my_colors),
-       lty=1,
-       col = my_colors,
-       lwd = 5,
-       bty="n",
-       cex = 0.7)
-foo <- dev.off()
-cat(paste0("... written: ", outFile, "\n"))
 
-myx <- datasets_variables_DT[, curr_var]
-myy <- datasets_variables_DT[, ref_var]
+for(i in seq_along(all_cmps)){
 
-outFile <- file.path(outFold, paste0(ref_var, "_", curr_var, ".", plotType))
-do.call(plotType, list(outFile, height = myHeight, width = myWidth))
-my_plot_function(varX = myx, varY=myy, 
-                 mylabels = as.character(rownames(datasets_variables_DT)), 
-                 withLab=F,
-                 main = paste0(titNames[ref_var], " vs. ", titNames[curr_var]),
-                 xlab = paste0(titNames[curr_var], "" ),
-                 ylab = paste0(titNames[ref_var]),
-                 xlim = range(myx) + c(-1000,1000),#+ c(-xoffset[curr_var], xoffset[curr_var]),
-                 ylim = range(myy) + c(-offSets[ref_var], offSets[ref_var])
-)
-text(x = myx, y = myy,
-     labels =  as.character(rownames(datasets_variables_DT)), 
-     pch=16,
-     col = curr_colors,
-     bty="n",
-     cex=0.7)
-mtext(side=3, text = mySub)
-legend("bottomright",
-       legend=names(my_colors),
-       lty=1,
-       col = my_colors,
-       lwd = 5,
-       bty="n",
-       cex = 0.7)
-foo <- dev.off()
-cat(paste0("... written: ", outFile, "\n"))
+    curr_var = all_cmps[[i]]["curr_var"]
+    ref_var = all_cmps[[i]]["ref_var"]
 
+    myx <- log10(datasets_variables_DT[, curr_var]+1)
+    myy <- datasets_variables_DT[, ref_var]
 
+    outFile <- file.path(outFold, paste0(ref_var, "_", curr_var, "_log10.", plotType))
+    do.call(plotType, list(outFile, height = myHeight, width = myWidth))
+    my_plot_function(varX = myx, varY=myy, 
+                     mylabels = as.character(rownames(datasets_variables_DT)), 
+                     withLab=F,
+                     main = paste0(titNames[ref_var], " vs. ", titNames[curr_var]),
+                     xlab = paste0(titNames[curr_var], "(log10[#+1])" ),
+                     ylab = paste0(titNames[ref_var]),
+                     xlim = range(myx) + c(-1,1),# + c(-log10(xoffset[curr_var]), log10(xoffset[curr_var])),
+                     ylim = range(myy) + c(-offSets[ref_var], offSets[ref_var])
+    )
+    text(x = myx, y = myy,
+         labels =  as.character(rownames(datasets_variables_DT)), 
+         pch=16,
+         col = curr_colors,
+         bty="n",
+         cex=0.7)
+    mtext(side=3, text = mySub)
+    legend("bottomright",
+           legend=names(my_colors),
+           lty=1,
+           col = my_colors,
+           lwd = 5,
+           bty="n",
+           cex = 0.7)
+    foo <- dev.off()
+    cat(paste0("... written: ", outFile, "\n"))
+
+    myx <- datasets_variables_DT[, curr_var]
+    myy <- datasets_variables_DT[, ref_var]
+
+    outFile <- file.path(outFold, paste0(ref_var, "_", curr_var, ".", plotType))
+    do.call(plotType, list(outFile, height = myHeight, width = myWidth))
+    my_plot_function(varX = myx, varY=myy, 
+                     mylabels = as.character(rownames(datasets_variables_DT)), 
+                     withLab=F,
+                     main = paste0(titNames[ref_var], " vs. ", titNames[curr_var]),
+                     xlab = paste0(titNames[curr_var], "" ),
+                     ylab = paste0(titNames[ref_var]),
+                     xlim = range(myx) + c(-1000,1000),#+ c(-xoffset[curr_var], xoffset[curr_var]),
+                     ylim = range(myy) + c(-offSets[ref_var], offSets[ref_var])
+    )
+    text(x = myx, y = myy,
+         labels =  as.character(rownames(datasets_variables_DT)), 
+         pch=16,
+         col = curr_colors,
+         bty="n",
+         cex=0.7)
+    mtext(side=3, text = mySub)
+    legend("bottomright",
+           legend=names(my_colors),
+           lty=1,
+           col = my_colors,
+           lwd = 5,
+           bty="n",
+           cex = 0.7)
+    foo <- dev.off()
+    cat(paste0("... written: ", outFile, "\n"))
+
+}
 
 ######################################################################################
 ######################################################################################
