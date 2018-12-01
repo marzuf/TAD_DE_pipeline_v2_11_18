@@ -101,6 +101,16 @@ myWidth <- ifelse(plotType == "png", 300, 5)
 
 # all_setting_files <- all_setting_files[1:3]
 
+rm_ds <- c(
+  "GSE65540_before_after",
+"GSE66306_before_after"
+)
+
+rm_ds <- c()
+
+#cat("all_setting_files[58] = ", all_setting_files[58], "\n")
+#stop("--")
+
 if(buildTable) {
   all_ds_geneVarDT <- foreach(ds_file = all_setting_files, .combine="rbind") %dopar% {
   
@@ -110,9 +120,11 @@ if(buildTable) {
   
     curr_ds <- basename(pipOutFold)
     cat("... START", curr_ds, "\n")
+    
+    if(curr_ds %in% rm_ds) return(NULL)
   
     ds_pipFolder <- file.path(pipMainFolder, pipOutFold)
-    cat(ds_pipFolder,"\n")
+    if(!file.exists(ds_pipFolder)) cat(ds_pipFolder,"\n")
     stopifnot(file.exists(ds_pipFolder))
     
     cat("... load samp1\n")

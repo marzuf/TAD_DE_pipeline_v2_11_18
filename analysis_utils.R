@@ -190,7 +190,20 @@ cancer_subAnnot <- c(
 "TCGAacc_acc_mutCTNNB1" = "mutation",
 "GSE74927_neg_pos" = "subtypes",
 "TCGAcrc_msi_mss" =  "subtypes",
-"GSE102073_stic_nostic" = "lesions"    
+"GSE102073_stic_nostic" = "lesions",
+
+"TCGAcesc_adeno_squam" = "subtypes",
+"TCGAhnsc_HPVneg_HPVpos" = "subtypes",
+"TCGAlgg_IDHwt_IDHmutnc" = "subtypes",
+"TCGAsarc_ddlps_lms" = "subtypes",
+"TCGAsarc_ddlps_mfs" = "subtypes",
+"TCGAsarc_lms_mfs" = "subtypes",
+"TCGAtgct_sem_nonsem" = "subtypes",
+
+"TCGAblca_norm_blca" = "vs_normal",
+"TCGAkich_norm_kich" = "vs_normal",
+"TCGAlusc_norm_lusc" = "vs_normal",
+"TCGAstad_norm_gs" = "vs_normal"
 )
 
 cancer_subColors <- c(
@@ -287,7 +300,11 @@ GO_aliases_top <- c(
   "topTADs_genes_intersectRatio_manyAsTopTADs" = "ratio # signif. genes in intersect - topTADs_genes",
   "nIntersectGenes_manyAsTopTADs" = "# signif. genes - intersect manyAsTopTADs",
   "nUnionGenes_manyAsTopTADs" = "# signif. genes - union",
-  "intersectGenesRatio_manyAsTopTADs" = "ratio signif. genes - intersect manyAsTopTADs"
+  "intersectGenesRatio_manyAsTopTADs" = "ratio signif. genes - intersect manyAsTopTADs",
+
+"topGenes_manyAsTopTADs_meanGOdim" = "Avg. ratio # GO genes from list/# GO genes - topGenes_manyAsTopTADs",
+"topGenes_manyAsPercent_meanGOdim" = "Avg. ratio # GO genes from list/# GO genes - topGenes_manyAsPercent",
+"topTADs_genes_meanGOdim" = "Avg. ratio # GO genes from list/# GO genes - topTADs_genes"
 )
 
 GO_aliases_top <- gsub(" - topGenes_manyAsPercent", "", GO_aliases_top)
@@ -373,7 +390,13 @@ GO_offSets_top <- c(
   "nUnionGenes_manyAsTopTADs" = 1,
 
   "intersectGenesRatio_manyAsTopTADs" = 0.01,
-  "intersectGenesRatio_manyAsPercent" = 0.01 
+  "intersectGenesRatio_manyAsPercent" = 0.01,
+
+
+"topGenes_manyAsTopTADs_meanGOdim" = 0.01,
+"topGenes_manyAsPercent_meanGOdim" = 0.01,
+"topTADs_genes_meanGOdim" = 0.01
+
 )
 
 
@@ -391,7 +414,11 @@ GO_aliases_common_top <- c(
     "signifGOtermRatio"="ratio # signif. GO (term)",
     "signifGOminRatio"="ratio # signif. GO (min. set)",
     "nTop"="# selected features",
-    "intersectRatio" = "ratio # intersect genes"
+    "intersectRatio" = "ratio # intersect genes",
+    "meanGOdim" = "Avg. ratio # GO genes from list/# GO genes"
+
+
+
 )                         
 
 
@@ -492,7 +519,12 @@ GO_aliases_pvalSelect <- c(
   "selectTADs_genes_intersectRatio" = "ratio # signif. genes in intersect - selectTADs_genes",
   "nIntersectGenes" = "# signif. genes - intersect",
   "nUnionGenes" = "# signif. genes - union",
-  "intersectGenesRatio" = "ratio signif. genes - intersect"
+  "intersectGenesRatio" = "ratio signif. genes - intersect",
+
+
+"selectGenes_meanGOdim" = "Avg. ratio # GO genes from list/# GO genes - selectGenes",
+"selectTADs_genes_meanGOdim" = "Avg. ratio # GO genes from list/# GO genes - selectTADs_genes"
+
 )
 
 GO_aliases_pvalSelect <- gsub(" - selectGenes", "", GO_aliases_pvalSelect)
@@ -543,7 +575,12 @@ GO_offSets_pvalSelect <- c(
   "selectTADs_genes_intersectRatio" = 0.01,
   "nIntersectGenes" = 1,
   "nUnionGenes" = 1,
-  "intersectGenesRatio" = 0.01 
+  "intersectGenesRatio" = 0.01,
+
+"selectGenes_meanGOdim" = 0.01,
+"selectTADs_genes_meanGOdim" = 0.01
+
+
 
 )
 
@@ -562,7 +599,8 @@ GO_aliases_common_pvalSelect <- c(
     "signifGOtermRatio"="ratio # signif. GO (term)",
     "signifGOminRatio"="ratio # signif. GO (min. set)",
     "nSelect"="# selected features",
-    "intersectRatio" = "ratio # intersect genes"
+    "intersectRatio" = "ratio # intersect genes",
+"meanGOdim" = "Avg. ratio # GO genes from list/# GO genes"
 )                         
 
 

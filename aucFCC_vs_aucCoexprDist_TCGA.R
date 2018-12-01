@@ -1,8 +1,8 @@
 
 startTime <- Sys.time()
-cat(paste0("> Rscript aucFCC_vs_aucCoexprDist.R\n"))
+cat(paste0("> Rscript aucFCC_vs_aucCoexprDist_TCGA.R\n"))
 
-# Rscript aucFCC_vs_aucCoexprDist.R
+# Rscript aucFCC_vs_aucCoexprDist_TCGA.R
 
 suppressPackageStartupMessages(library(foreach, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE))
 suppressPackageStartupMessages(library(doMC, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE))
@@ -54,8 +54,9 @@ head(score_DT)
 dataset_proc_colors <- setNames(score_DT$proc_col, score_DT$dataset)
 length(dataset_proc_colors)
 
+cancerDS <- score_DT$dataset[score_DT$process_short == "cancer"]
 
-outFold <- file.path("AUCfcc_vs_AUCcoexprdist")
+outFold <- file.path("AUCfcc_vs_AUCcoexprdist_TCGA")
 system(paste0("mkdir -p ", outFold))
 
 # logFile <- file.path(outFold, paste0("auccFCC_vs_aucCoexprDist_logFile.txt"))  
@@ -64,22 +65,22 @@ system(paste0("mkdir -p ", outFold))
 pipOutFold <- file.path(setDir, paste0("/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2_", caller), "OUTPUT_FOLDER")
 all_datasets <- list.files(pipOutFold)
 
-cat(paste0("# of datasets found: ", length(all_datasets), "\n"))
+#all_datasets <- all_datasets[all_datasets %in% cancerDS]
+all_datasets <- all_datasets[grepl("TCGA",all_datasets)]
 
-myylab <- paste0("% AUC increase")
+stopifnot(length(all_datasets) > 0)
+
+cat(paste0("# of datasets found: ", length(all_datasets), "\n"))
 
 if(buildTable) {
 
 all_auc <- foreach(curr_dataset = all_datasets) %dopar% {
   
   aucFCC_file <- file.path(pipOutFold, curr_dataset, script170_name, "allratio_auc_pval.Rdata")
-  if(!file.exists(aucFCC_file)) cat("aucFCC_file = ", aucFCC_file, "\n")
   stopifnot(file.exists(aucFCC_file))
   
   aucCoexprDist_file <- file.path(setDir, paste0("/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2_", caller),
                                   "AUC_COEXPRDIST_SORTNODUP", curr_dataset, "auc_values.Rdata")
-
-  if(!file.exists(aucCoexprDist_file)) cat("aucCoexprDist_file = ", aucCoexprDist_file, "\n")
   stopifnot(file.exists(aucCoexprDist_file))
   
   all_ratios <- eval(parse(text = load(aucFCC_file)))
@@ -133,9 +134,12 @@ myylab <- paste0("% coexpr. AUC increase")
 myTit <- paste0("% AUC increase coexpr. vs. FCC")
 
 
-curr_colors <- dataset_proc_colors[names(all_auc_FCC)]
+# curr_colors <- dataset_proc_colors[names(all_auc_FCC)]
 
-outFile <- file.path(outFold, paste0("aucFCC_vs_aucCoexprDist_all_datasets.", plotType))
+curr_colors <- as.character(cancer_subColors[as.character(cancer_subAnnot[names(all_auc_FCC)])])
+stopifnot(!is.na(curr_colors))
+
+outFile <- file.path(outFold, paste0("aucFCC_vs_aucCoexprDist_cancer_datasets.", plotType))
 do.call(plotType, list(outFile, height = myHeightScatter, width =myWidthScatter))
 plot(x = all_auc_FCC,
      y = all_auc_CoexprDist,
@@ -173,9 +177,9 @@ my_colors_leg <- my_colors
 #names(my_colors_leg)[names(my_colors_leg) == "embryonic development"] <- "embryonic\ndevelopment"
 
 legend("topleft",
-       legend=names(my_colors_leg),
+       legend=unique(cancer_subAnnot[names(all_auc_FCC)]), #names(curr_colors),
        lty=1,
-       col = my_colors_leg,
+       col = unique(curr_colors),
        lwd = 5,
        bty="n",
        cex = 0.7)
@@ -203,8 +207,11 @@ auc_DT <- auc_DT[order(auc_DT$auc_fcc, decreasing = TRUE),]
 auc_DT_m <- melt(auc_DT, id=c("dataset"))
 auc_DT_m$dataset <- factor(as.character(auc_DT_m$dataset), levels = as.character(auc_DT$dataset))
 
-stopifnot(as.character(auc_DT_m$dataset)  %in% names(dataset_proc_colors) )
-curr_colors <- dataset_proc_colors[as.character(levels(auc_DT_m$dataset))]
+# stopifnot(as.character(auc_DT_m$dataset)  %in% names(dataset_proc_colors) )
+# curr_colors <- dataset_proc_colors[as.character(levels(auc_DT_m$dataset))]
+stopifnot(as.character(auc_DT_m$dataset)  %in% names(cancer_subAnnot) )
+curr_colors <- as.character(cancer_subColors[as.character(cancer_subAnnot[levels(auc_DT_m$dataset)])])
+
 
 plotDT <- auc_DT_m
 # plotDT$value <- plotDT$value - 1
@@ -255,7 +262,7 @@ p_AUC <- ggplot(plotDT, aes(x = dataset, y = value, fill = variable)) +
 
 if(SSHFS) p_AUC
 
-outFile <- file.path(outFold, paste0("aucFCC_aucCoexprDist_all_datasets_barplot_orderFCC.", plotType))
+outFile <- file.path(outFold, paste0("aucFCC_aucCoexprDist_cancer_datasets_barplot_orderFCC.", plotType))
 ggsave(p_AUC, filename = outFile, height = 6, width=12)
 cat(paste0("... written: ", outFile, "\n"))
 
@@ -268,8 +275,7 @@ auc_DT <- auc_DT[order(auc_DT$auc_coexpr, decreasing = TRUE),]
 plotDT$dataset <- factor(as.character(plotDT$dataset), levels = as.character(auc_DT$dataset))
 
 my_breaks <- scales::pretty_breaks(n = 5)(plotDT$value)
-# my_labels <- my_breaks + 1
-my_labels <- my_breaks
+my_labels <- my_breaks + 1
 
 p_AUC <- ggplot(plotDT, aes(x = dataset, y = value, fill = variable)) +
   geom_bar(stat="identity", position="dodge") +
@@ -309,7 +315,7 @@ p_AUC <- ggplot(plotDT, aes(x = dataset, y = value, fill = variable)) +
 
 if(SSHFS) p_AUC
 
-outFile <- file.path(outFold, paste0("aucFCC_aucCoexprDist_all_datasets_barplot_orderCoexpr.", plotType))
+outFile <- file.path(outFold, paste0("aucFCC_aucCoexprDist_cancer_datasets_barplot_orderCoexpr.", plotType))
 ggsave(p_AUC, filename = outFile, height = 6, width=12)
 cat(paste0("... written: ", outFile, "\n"))
 
@@ -326,15 +332,19 @@ auc_DT <- auc_DT[order(auc_DT$auc_fcc, decreasing = TRUE),]
 auc_DT_m <- melt(auc_DT, id=c("dataset"))
 auc_DT_m$dataset <- factor(as.character(auc_DT_m$dataset), levels = as.character(auc_DT$dataset))
 
+# stopifnot(as.character(auc_DT_m$dataset)  %in% names(dataset_proc_colors) )
+# curr_colors <- dataset_proc_colors[as.character(levels(auc_DT_m$dataset))]
+
 stopifnot(as.character(auc_DT_m$dataset)  %in% names(dataset_proc_colors) )
-curr_colors <- dataset_proc_colors[as.character(levels(auc_DT_m$dataset))]
+curr_colors <- as.character(cancer_subColors[as.character(cancer_subAnnot[levels(auc_DT_m$dataset)])])
+stopifnot(!is.na(curr_colors))
 
 plotDT <- auc_DT_m[auc_DT_m$variable == "auc_fcc",]
 stopifnot(nrow(plotDT) > 0)
 # plotDT$value <- plotDT$value - 1
 
 
-myylab <- paste0("% AUC increase - FCC")
+myylab <- paste0("% AUC increase - FCC.")
 # myTit <- paste0("AUC ratio - FCC")
 myTit <- paste0("% AUC increase - FCC")
 my_breaks <- scales::pretty_breaks(n = 5)(plotDT$value)
@@ -380,7 +390,7 @@ p_AUC <- ggplot(plotDT, aes(x = dataset, y = value, fill = variable)) +
 
 if(SSHFS) p_AUC
 
-outFile <- file.path(outFold, paste0("aucFCC_all_datasets_barplot.", plotType))
+outFile <- file.path(outFold, paste0("aucFCC_cancer_datasets_barplot.", plotType))
 ggsave(p_AUC, filename = outFile, height = myHeight, width=myWidth)
 cat(paste0("... written: ", outFile, "\n"))
 
@@ -397,7 +407,10 @@ plotDT <- auc_DT_m[auc_DT_m$variable == "auc_coexpr",]
 stopifnot(nrow(plotDT) > 0)
 # plotDT$value <- plotDT$value - 1
 
-curr_colors <- dataset_proc_colors[as.character(levels(auc_DT_m$dataset))]
+# curr_colors <- dataset_proc_colors[as.character(levels(auc_DT_m$dataset))]
+curr_colors <- as.character(cancer_subColors[as.character(cancer_subAnnot[levels(auc_DT_m$dataset)])])
+stopifnot(!is.na(curr_colors))
+
 
 myylab <- paste0("% AUC increase - coexpr.")
 
@@ -444,7 +457,7 @@ p_AUC <- ggplot(plotDT, aes(x = dataset, y = value, fill = variable)) +
 
 if(SSHFS) p_AUC
 
-outFile <- file.path(outFold, paste0("aucCoexprDist_all_datasets_barplot.", plotType))
+outFile <- file.path(outFold, paste0("aucCoexprDist_cancer_datasets_barplot.", plotType))
 ggsave(p_AUC, filename = outFile, height = myHeight, width=myWidth)
 cat(paste0("... written: ", outFile, "\n"))
 

@@ -21,26 +21,32 @@ dataset_proc_colors <- setNames(score_DT$proc_col, score_DT$dataset)
 source("analysis_utils.R")
 
 # Rscript AUC_ratio_cumulVect.R <cumulVar>
-# Rscript AUC_ratio_cumulVect.R FC
+# Rscript AUC_ratio_cumulVect.R FC log10
 
 nTop <- 1000 # how many top features were used to build the data
 
 cat("> START: AUC_ratio_cumulVect.R\n")
 
 cumulVar <- "FC"
+dataType <- "log10"
 args <- commandArgs(trailingOnly = TRUE)
-stopifnot(length(args) == 1)
+stopifnot(length(args) == 2)
 cumulVar <- args[1]
+dataType <- args[2]
 stopifnot(cumulVar %in% c("FC", "var"))
+stopifnot(dataType %in% c("log10", "raw", "rescVar", "rescFC", "log10_cropFC", "log10_cropVar", "raw_cropFC", "raw_cropVar", "rescVar_cropVar", "rescFC", "rescFC_cropFC"))
 
-outFold <- file.path(paste0("AUC_RATIO_CUMULVECT"), cumulVar)
+outFold <- file.path(paste0("AUC_RATIO_CUMULVECT"), cumulVar, dataType)
 system(paste0("mkdir -p ", outFold))
 
 if(cumulVar == "FC") {
   
   vectFile <- file.path("CUMUL_GENE_FC",
                         nTop,
-                        "all_y.Rdata")
+                        dataType,
+                        paste0("all_y_", dataType, ".Rdata"))
+  
+  cat("vectFile = ", vectFile, "\n")
   
   stopifnot(file.exists(vectFile))
   
@@ -51,7 +57,8 @@ if(cumulVar == "FC") {
   
   vectFile <- file.path("CUMUL_GENE_VARIANCE",
                         paste0("LOG2FPKM_", nTop),
-                        "all_y.Rdata")
+                        dataType,
+                        paste0("all_y_", dataType, ".Rdata"))
   
   stopifnot(file.exists(vectFile))
   
@@ -94,6 +101,7 @@ all_ds_aucFCC <- foreach(curr_ds = all_ds, .combine='c') %dopar% {
   ### RETRIEVE FCC
   step17_fold <- file.path(dsFold, curr_ds, "170_score_auc_pval_withShuffle")
   aucFCC_file <- file.path(step17_fold, "allratio_auc_pval.Rdata")
+  if(!file.exists(aucFCC_file)) cat("... aucFCC_file = ", aucFCC_file, "\n")
   stopifnot(file.exists(aucFCC_file))
   aucCoexprDist_file <- file.path(setDir, paste0("/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2_", "TopDom"),
                                   "AUC_COEXPRDIST_SORTNODUP", curr_ds, "auc_values.Rdata")
@@ -119,6 +127,9 @@ head(score_DT)
 dataset_proc_colors <- setNames(score_DT$proc_col, score_DT$dataset)
 length(dataset_proc_colors)
 
+cat("!!! TEMPORARY FILTER DS !!!")
+all_ds <- all_ds[all_ds %in% names(resc_auc_values)]
+
 resc_auc <- setNames(unlist(resc_auc_values),names(resc_auc_values))
 stopifnot(names(resc_auc) %in% all_ds)
 stopifnot(all_ds %in% names(resc_auc))
@@ -134,14 +145,28 @@ curr_colors <- dataset_proc_colors[all_ds]
 
 outFile <- file.path(outFold, paste0(cumulVar, "_vs_FCC.", plotType))
 
+all_ds_aucFCC <- (all_ds_aucFCC-1)*100
+resc_auc <- (resc_auc)*100
+
+offsetRange <- c(-15,15)
+
+#myTit <- paste0("% increase AUC ", cumulVar, " vs. FCC")
+#myxlab <- paste0("% increase AUC - FCC")
+#myylab <- paste0("% increase AUC - ", cumulVar, " (", dataType, ")" )
+
+myTit <- paste0("% rel. AUC ", cumulVar, " vs. % increase AUC FCC")
+myxlab <- paste0("% increase AUC - FCC")
+myylab <- paste0("% rel. AUC - ", cumulVar, " (", dataType, ")" )
+
+
 do.call(plotType, list(outFile, height = myHeight, width = myWidth))
 plot(x = all_ds_aucFCC,
      y = resc_auc,
-     xlim = range(all_ds_aucFCC) + c(-0.05, 0.05),
-     ylim = range(resc_auc) + c(-0.05, 0.05),
-     main = paste0(cumulVar, " AUC vs. FCC AUC ratio"),
-     ylab = paste0("resc. ", cumulVar, " AUC"),
-     xlab = paste0("AUC ratio - FCC"),
+     xlim = range(all_ds_aucFCC) + offsetRange,
+     ylim = range(resc_auc) + offsetRange,
+     main = myTit,
+     ylab = myylab,
+     xlab = myxlab,
      pch=16
      )
 mtext(side = 3, text = paste0(subTit))

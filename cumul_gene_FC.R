@@ -74,6 +74,21 @@ myWidth <- ifelse(plotType == "png", 300, 5)
 
 ds_file="/media/electron//mnt/ed4/marie/scripts/TAD_DE_pipeline/SETTING_FILES_cleanInput/run_settings_TCGAcrc_msi_mss.R"
 ds_file="/media/electron//mnt/ed4/marie/scripts/TAD_DE_pipeline/SETTING_FILES_cleanInput/run_settings_GSE102073_stic_nostic.R"
+
+
+rm_ds <- c("GSE77509_normal_tumor",
+"GSE77509_normal_ptt",
+"GSE77509_ptt_tumor",
+"GSE68719_norm_park",
+"GSE64810_control_carrier",
+"GSE101521_control_mdd",
+"GSE77314_normal_tumor"
+)
+rm_ds <- c()
+
+
+
+
 if(buildTable) {
   all_ds_geneFC_DT <- foreach(ds_file = all_setting_files, .combine="rbind") %dopar% {
   
@@ -83,6 +98,8 @@ if(buildTable) {
   
     curr_ds <- basename(pipOutFold)
     cat("... START", curr_ds, "\n")
+    
+    if(curr_ds %in% rm_ds) return(NULL)
   
     ds_pipFolder <- file.path(pipMainFolder, pipOutFold)
     cat(ds_pipFolder,"\n")

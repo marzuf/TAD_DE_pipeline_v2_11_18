@@ -1,8 +1,8 @@
-# Rscript gene_variance.R <exprType>
-# Rscript gene_variance.R fpkm
-# Rscript gene_variance.R log2fpkm
-# Rscript gene_variance.R NBvar
-# Rscript gene_variance.R voom
+# Rscript gene_variance_cancerDS.R <exprType>
+# Rscript gene_variance_cancerDS.R fpkm
+# Rscript gene_variance_cancerDS.R log2fpkm
+# Rscript gene_variance_cancerDS.R NBvar
+# Rscript gene_variance_cancerDS.R voom
 cat("> START: gene_variance.R\n")
 
 SSHFS <- FALSE
@@ -28,6 +28,7 @@ head(score_DT)
 dataset_proc_colors <- setNames(score_DT$proc_col, score_DT$dataset)
 length(dataset_proc_colors)
 
+cancerDS <- score_DT$dataset[score_DT$process_short == "cancer"]
 
 registerDoMC(ifelse(SSHFS,2,40))
 
@@ -51,11 +52,14 @@ stopifnot(!is.na(exprTypeName))
 cat("... START with exprType =\t", exprType, "\n")
 cat("... START with nTopLast =\t", nTopLast, "\n")
 
-buildTable <- F
+buildTable <- TRUE
 
 # registerDoMC(ifelse(SSHFS, 2, 20))
 
 source(file.path(setDir, "/mnt/ed4/marie/scripts/EZH2_final_MAPQ/ezh2_utils_fct.R"))
+
+
+source("analysis_utils.R")
 
 settingFolder <- file.path(setDir, "/mnt/ed4/marie/scripts/TAD_DE_pipeline/SETTING_FILES_cleanInput")
 
@@ -67,7 +71,7 @@ all_setting_files <- list.files(settingFolder, full.names=T)
 all_setting_files <- all_setting_files[grep(".R$", all_setting_files)]
 stopifnot(length(all_setting_files) > 0)
 
-outFold <- file.path(paste0("GENE_VARIANCE"), toupper(exprType))
+outFold <- file.path(paste0("GENE_VARIANCE_noTCGA"), toupper(exprType))
 system(paste0("mkdir -p ", outFold))
 
 plotType <- "svg"
@@ -85,6 +89,9 @@ if(buildTable) {
   
     curr_ds <- basename(pipOutFold)
     cat("... START", curr_ds, "\n")
+
+    if(! curr_ds %in% cancerDS) return(NULL)
+    if(grepl("^TCGA", curr_ds)) return(NULL)
   
     ds_pipFolder <- file.path(pipMainFolder, pipOutFold)
     cat(ds_pipFolder,"\n")
@@ -195,7 +202,10 @@ aucFCC <- foreach(curr_ds = all_ds, .combine='c') %dopar% {
 names(aucFCC) <- all_ds
 
 stopifnot(names(aucFCC) %in% names(dataset_proc_colors) )
-curr_colors <- dataset_proc_colors[names(aucFCC)]
+# curr_colors <- dataset_proc_colors[names(aucFCC)]
+
+curr_colors <- as.character(cancer_subColors[as.character(cancer_subAnnot[names(aucFCC)])])
+stopifnot(!is.na(curr_colors))
 
 aucCoexprDist <- foreach(curr_ds = all_ds, .combine='c') %dopar% {
   ### RETRIEVE FCC
@@ -480,14 +490,15 @@ cex.axis = cexAxis, cex.lab = cexLab
   mtext(text = mySubTit, side = 3)
   
   
+  my_colors <- my_colors[my_colors %in% curr_colors]
+  
   legend("topleft",
-         legend=names(my_colors),
+         legend=unique(cancer_subAnnot[names(aucFCC)]),
          lty=1,
-         col = my_colors,
+         col = unique(curr_colors),
          lwd = 5,
          bty="n",
          cex = 0.7)
-  
   
   foo <- dev.off()
   cat(paste0("... written: ", outFile, "\n"))

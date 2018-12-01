@@ -28,6 +28,10 @@ suppressPackageStartupMessages(library(grid, warn.conflicts = FALSE, quietly = T
 suppressPackageStartupMessages(library(gridExtra, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE)) 
 suppressPackageStartupMessages(library(Hmisc, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE)) 
 
+
+source("ds_list_run1.R")
+
+
 # retrieved from ontologyIndex; needed for ontologyIndex::minimal_set()
 data(go)
 
@@ -148,6 +152,9 @@ stopifnot(file.exists(dsFold))
 all_ds <- list.files(dsFold)
 stopifnot(length(all_ds) >= nTopDS)
 
+#all_ds <- all_ds[all_ds %in% run1_DS]
+
+
 txt <- paste0("... found # datasets:\t", length(all_ds), "\n")
 printAndLog(txt, logFile)
 
@@ -194,13 +201,23 @@ printAndLog(txt, logFile)
 c5_msigdb <- read.gmt(gmtFile)
 stopifnot(!is.numeric(c5_msigdb$gene))
 
+nGenesByGo <- setNames(as.numeric(table(c5_msigdb$ont)), 
+                       as.character(names(table(c5_msigdb$ont))))
+
+
 ##########################################################################################
 ##########################################################################################
+
+# cat("all_ds[60] = ", all_ds[60], "\n")
+
+stopifnot(!is.na(all_ds))
+
 
 all_ds_aucFCC <- foreach(curr_ds = all_ds, .combine='c') %dopar% {
   ### RETRIEVE FCC
   step17_fold <- file.path(dsFold, curr_ds, "170_score_auc_pval_withShuffle")
   aucFCC_file <- file.path(step17_fold, "allratio_auc_pval.Rdata")
+  if(!file.exists(aucFCC_file)) cat("aucFCC_file = ", aucFCC_file, "\n")
   stopifnot(file.exists(aucFCC_file))
   aucCoexprDist_file <- file.path(setDir, paste0("/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2_", "TopDom"),
                                   "AUC_COEXPRDIST_SORTNODUP", curr_ds, "auc_values.Rdata")
@@ -231,10 +248,12 @@ names(all_ds_aucCoexprDist) <- all_ds
 #            "GSE86356_tibMD1_tibNorm"
 #            )
 
+maxNds <- min(nTopDS, length(all_ds_aucFCC))
+
 if(rankVar == "FCC"){
-  topDS <- names(sort(all_ds_aucFCC, decreasing=TRUE)[1:nTopDS])  
+  topDS <- names(sort(all_ds_aucFCC, decreasing=TRUE)[1:maxNds])  
 } else if(rankVar == "coexpr"){
-  topDS <- names(sort(all_ds_aucCoexprDist, decreasing=TRUE)[1:nTopDS])
+  topDS <- names(sort(all_ds_aucCoexprDist, decreasing=TRUE)[1:maxNds])
 } else if(rankVar == "avg"){
   tmpFCC <- sort(rank(-all_ds_aucFCC, ties = "first" ))
   tmpCoexpr <- sort(rank(-all_ds_aucCoexprDist, ties = "first" ))
@@ -246,10 +265,12 @@ if(rankVar == "FCC"){
   stopifnot(!is.na(tmpCoexpr))
   meanScore <- 0.5*(tmpFCC + tmpCoexpr)
   stopifnot(names(meanScore) == names(tmpFCC))
-  topDS <- names(sort(meanScore, decreasing=F)[1:nTopDS])
+  topDS <- names(sort(meanScore, decreasing=F)[1:maxNds])
 } else {
   stop("-- error rankVar -- \n")
 }
+
+stopifnot(!is.na(topDS))
 
 ##########################################################################################
 ##########################################################################################
@@ -370,6 +391,24 @@ if(buildTable){
       outFile <- file.path(outFold, paste0(curr_ds,"_selectTADs_genes_enrichSaveDT.Rdata"))
       save(selectTADs_genes_enrichSaveDT, file = outFile)
       cat(paste0("... written: ", outFile, "\n"))
+      
+      
+      tmpDT <- selectTADs_genes_resultDT[selectTADs_genes_resultDT[,paste0(padjVarGO)] <= pvalSelectGO,]
+      
+      if(nrow(tmpDT) > 0) {
+        stopifnot(rownames(tmpDT) %in% names(nGenesByGo))
+        nGenesGO <- sapply(rownames(tmpDT), function(x) as.numeric(nGenesByGo[x]))
+        stopifnot(is.numeric(nGenesGO))
+        stopifnot(!is.na(nGenesGO))
+        GOdim <- tmpDT$Count/nGenesGO
+        stopifnot(GOdim > 0 & GOdim <= 1)
+        selectTADs_genes_meanGOdim <- mean(GOdim)
+        stopifnot(!is.na(selectTADs_genes_meanGOdim))  
+        
+      }else {
+        selectTADs_genes_meanGOdim <- NA
+      }
+      
 
       selectTADs_genes_signifGOterm <- as.character(selectTADs_genes_resultDT$ID[selectTADs_genes_resultDT[,paste0(padjVarGO)] <= pvalSelectGO])
       nSelectTADs_genes_signifGOterm <- length(selectTADs_genes_signifGOterm)
@@ -399,6 +438,7 @@ if(buildTable){
       selectTADs_genes_signifGOid <- NA
       nSelectTADs_genes_signifGOid <- NA
       nSelectTADs_genes_signifGOterm <- NA
+      selectTADs_genes_meanGOdim <- NA
     }
     
     #***** 2) selectGenes
@@ -427,6 +467,24 @@ if(buildTable){
       outFile <- file.path(outFold, paste0(curr_ds, "_selectGenes_enrichSaveDT.Rdata"))
       save(selectGenes_enrichSaveDT, file = outFile)
       cat(paste0("... written: ", outFile, "\n"))
+      
+      tmpDT <- selectGenes_resultDT[selectGenes_resultDT[,paste0(padjVarGO)] <= pvalSelectGO,]
+      
+      if(nrow(tmpDT) > 0) {
+        stopifnot(rownames(tmpDT) %in% names(nGenesByGo))
+        nGenesGO <- sapply(rownames(tmpDT), function(x) as.numeric(nGenesByGo[x]))
+        stopifnot(is.numeric(nGenesGO))
+        stopifnot(!is.na(nGenesGO))
+        GOdim <- tmpDT$Count/nGenesGO
+        stopifnot(GOdim > 0 & GOdim <= 1)
+        selectGenes_meanGOdim <- mean(GOdim)
+        stopifnot(!is.na(selectGenes_meanGOdim))  
+      } else {
+        selectGenes_meanGOdim <- NA
+      }
+
+      
+      
 
       selectGenes_signifGOterm <- as.character(selectGenes_resultDT$ID[selectGenes_resultDT[,paste0(padjVarGO)] <= pvalSelectGO])
       nSelectGenes_signifGOterm <- length(selectGenes_signifGOterm)
@@ -454,6 +512,7 @@ if(buildTable){
       selectGenes_signifGOterm <- NA
       nSelectGenes_signifGOid <- NA
       nSelectGenes_signifGOterm <- NA
+      selectGenes_meanGOdim <- NA
     }
 
 
@@ -644,6 +703,9 @@ if(!is.na(nSelectGenes_signifGOid) & nSelectGenes_signifGOid > 0) {
     selectTADs_genes_intersectRatio = selectTADs_genes_intersectRatio,
     
     intersectGenesRatio = intersectGenesRatio,
+    
+    selectTADs_genes_meanGOdim = selectTADs_genes_meanGOdim,
+    selectGenes_meanGOdim = selectGenes_meanGOdim,
     
     stringsAsFactors=FALSE
     

@@ -23,6 +23,8 @@ suppressPackageStartupMessages(library(gridExtra, warn.conflicts = FALSE, quietl
 suppressPackageStartupMessages(library(grid, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE)) 
 suppressPackageStartupMessages(library(Hmisc, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE)) 
 
+source("ds_list_run1.R")
+
 
 # retrieved from ontologyIndex; needed for ontologyIndex::minimal_set()
 data(go)
@@ -146,6 +148,9 @@ stopifnot(file.exists(dsFold))
 all_ds <- list.files(dsFold)
 stopifnot(length(all_ds) >= nTopDS)
 
+#all_ds <- all_ds[all_ds %in% run1_DS]
+
+
 
 txt <- paste0("... found # datasets:\t", length(all_ds), "\n")
 printAndLog(txt, logFile)
@@ -194,10 +199,18 @@ printAndLog(txt, logFile)
 
 c5_msigdb <- read.gmt(gmtFile)
 
+nGenesByGo <- setNames(as.numeric(table(c5_msigdb$ont)), 
+                       as.character(names(table(c5_msigdb$ont))))
+
 ##########################################################################################
 ##########################################################################################
 
 all_ds_aucFCC <- foreach(curr_ds = all_ds, .combine='c') %dopar% {
+
+#if(!curr_ds %in% run1_DS) return(NULL)
+
+  # cat("curr_ds %in% run1_DS\n")
+
   ### RETRIEVE FCC
   step17_fold <- file.path(dsFold, curr_ds, "170_score_auc_pval_withShuffle")
   aucFCC_file <- file.path(step17_fold, "allratio_auc_pval.Rdata")
@@ -213,6 +226,10 @@ all_ds_aucFCC <- foreach(curr_ds = all_ds, .combine='c') %dopar% {
 names(all_ds_aucFCC) <- all_ds
 
 all_ds_aucCoexprDist <- foreach(curr_ds = all_ds, .combine='c') %dopar% {
+
+#if(!curr_ds %in% run1_DS) return(NULL)
+
+
   ### RETRIEVE FCC
   step17_fold <- file.path(dsFold, curr_ds, "170_score_auc_pval_withShuffle")
   aucCoexprDist_file <- file.path(setDir, paste0("/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2_", "TopDom"),
@@ -225,10 +242,12 @@ all_ds_aucCoexprDist <- foreach(curr_ds = all_ds, .combine='c') %dopar% {
 }
 names(all_ds_aucCoexprDist) <- all_ds
 
+maxNds <- min(nTopDS, length(all_ds_aucFCC))
+
 if(rankVar == "FCC"){
-  topDS <- names(sort(all_ds_aucFCC, decreasing=TRUE)[1:nTopDS])  
+  topDS <- names(sort(all_ds_aucFCC, decreasing=TRUE)[1:maxNds])  
 } else if(rankVar == "coexpr"){
-  topDS <- names(sort(all_ds_aucCoexprDist, decreasing=TRUE)[1:nTopDS])
+  topDS <- names(sort(all_ds_aucCoexprDist, decreasing=TRUE)[1:maxNds])
 } else if(rankVar == "avg"){
   tmpFCC <- sort(rank(-all_ds_aucFCC, ties = "first" ))
   tmpCoexpr <- sort(rank(-all_ds_aucCoexprDist, ties = "first" ))
@@ -240,10 +259,20 @@ if(rankVar == "FCC"){
   stopifnot(!is.na(tmpCoexpr))
   meanScore <- 0.5*(tmpFCC + tmpCoexpr)
   stopifnot(names(meanScore) == names(tmpFCC))
-  topDS <- names(sort(meanScore, decreasing=F)[1:nTopDS])
+  topDS <- names(sort(meanScore, decreasing=F)[1:maxNds])
 } else {
   stop("-- error rankVar -- \n")
 }
+
+# topDS# avg
+# 
+# topDS_avg <- topDS
+# 
+# xx <- all_ds_aucFCC[names(all_ds_aucFCC)] + all_ds_aucCoexprDist[names(all_ds_aucFCC)]
+# topDS_avgScore <- names(sort(xx, decreasing=TRUE))
+# 
+# cmpTops = data.frame(rankFCC = topDS_FCC, rankAvg=topDS_avg, rankAvgScore=topDS_avgScore, stringsAsFactors = FALSE)
+# write.table(cmpTops, file="cmpTops.txt", sep="\t", quote=F, col.names=T, row.names=F)
 
 ##########################################################################################
 ##########################################################################################
@@ -253,6 +282,11 @@ if(rankVar == "FCC"){
 curr_ds="TCGAcrc_msi_mss"
 if(buildTable){
   all_ds_DT <- foreach(curr_ds = topDS, .combine='rbind') %dopar% {
+
+
+#if(!curr_ds %in% run1_DS) return(NULL)
+
+
     txt <- paste0("*** START:\t", curr_ds, "\n")
     printAndLog(txt, logFile)
     
@@ -396,6 +430,24 @@ if(buildTable){
   # }
   # stopifnot(length(topTADs_genes_topGo) == topTADs_genes_nTop)
   
+  
+  tmpDT <- topTADs_genes_resultDT[topTADs_genes_resultDT[,paste0(padjVarGO)] <= pvalSelectGO,]
+  
+  if(nrow(tmpDT) > 0) {
+    stopifnot(rownames(tmpDT) %in% names(nGenesByGo))
+    nGenesGO <- sapply(rownames(tmpDT), function(x) as.numeric(nGenesByGo[x]))
+    stopifnot(is.numeric(nGenesGO))
+    stopifnot(!is.na(nGenesGO))
+    GOdim <- tmpDT$Count/nGenesGO
+    stopifnot(GOdim > 0 & GOdim <= 1)
+    topTADs_genes_meanGOdim <- mean(GOdim)
+    stopifnot(!is.na(topTADs_genes_meanGOdim))  
+  } else {
+    topTADs_genes_meanGOdim <- NA
+  }
+
+  
+  
   topTADs_genes_signifGOterm <- as.character(topTADs_genes_resultDT$ID[topTADs_genes_resultDT[, paste0(padjVarGO)] <= pvalSelectGO])
   nTopTADs_genes_signifGOterm <- length(topTADs_genes_signifGOterm)
   
@@ -456,6 +508,23 @@ if(buildTable){
   # }
   # stopifnot(length(topGenes_manyAsPercent_topGo) == topGenes_manyAsPercent_nTop)
   
+  tmpDT <- topGenes_manyAsPercent_resultDT[topGenes_manyAsPercent_resultDT[,paste0(padjVarGO)] <= pvalSelectGO,]
+  
+  if(nrow(tmpDT) > 0) {
+    stopifnot(rownames(tmpDT) %in% names(nGenesByGo))
+    nGenesGO <- sapply(rownames(tmpDT), function(x) as.numeric(nGenesByGo[x]))
+    stopifnot(is.numeric(nGenesGO))
+    stopifnot(!is.na(nGenesGO))
+    GOdim <- tmpDT$Count/nGenesGO
+    stopifnot(GOdim > 0 & GOdim <= 1)
+    topGenes_manyAsPercent_meanGOdim <- mean(GOdim)
+    stopifnot(!is.na(topGenes_manyAsPercent_meanGOdim))
+  } else{
+    topGenes_manyAsPercent_meanGOdim <- NA
+  }
+
+  
+  
   topGenes_manyAsPercent_signifGOterm <- as.character(topGenes_manyAsPercent_resultDT$ID[topGenes_manyAsPercent_resultDT[, paste0(padjVarGO)] <= pvalSelectGO])
   nTopGenes_manyAsPercent_signifGOterm <- length(topGenes_manyAsPercent_signifGOterm)
   
@@ -514,6 +583,22 @@ if(buildTable){
   #   topGenes_manyAsTopTADs_topGo  <- character(0)  
   # }
   # stopifnot(length(topGenes_manyAsTopTADs_topGo) == topGenes_manyAsTopTADs_nTop)
+  
+  tmpDT <- topGenes_manyAsTopTADs_resultDT[topGenes_manyAsTopTADs_resultDT[,paste0(padjVarGO)] <= pvalSelectGO,]
+  
+  if(nrow(tmpDT) > 0) {
+    stopifnot(rownames(tmpDT) %in% names(nGenesByGo))
+    nGenesGO <- sapply(rownames(tmpDT), function(x) as.numeric(nGenesByGo[x]))
+    stopifnot(is.numeric(nGenesGO))
+    stopifnot(!is.na(nGenesGO))
+    GOdim <- tmpDT$Count/nGenesGO
+    stopifnot(GOdim > 0 & GOdim <= 1)
+    topGenes_manyAsTopTADs_meanGOdim <- mean(GOdim)
+    stopifnot(!is.na(topGenes_manyAsTopTADs_meanGOdim))
+  }else{
+    topGenes_manyAsTopTADs_meanGOdim <- NA
+  }
+
   
   topGenes_manyAsTopTADs_signifGOterm <- as.character(topGenes_manyAsTopTADs_resultDT$ID[topGenes_manyAsTopTADs_resultDT[,paste0(padjVarGO)] <= pvalSelectGO])
   nTopGenes_manyAsTopTADs_signifGOterm <- length(topGenes_manyAsTopTADs_signifGOterm)
@@ -593,7 +678,8 @@ if(buildTable){
     topTADs_genes_g_meanDistDir <- NA
     topTADs_genes_g_meanEccentricity <- NA
     topTADs_genes_g_meanBetweenness <- NA
-  }
+    topTADs_genes_meanGOdim <- NA
+}
     
   ############################################################################################
   ############################################################################################ GRAPH - manyAsPercent
@@ -651,6 +737,7 @@ if(buildTable){
     topGenes_manyAsPercent_g_meanDistDir <- NA
     topGenes_manyAsPercent_g_meanEccentricity <- NA
     topGenes_manyAsPercent_g_meanBetweenness <- NA
+    topGenes_manyAsPercent_meanGOdim <- NA
   }
     
     
@@ -710,6 +797,7 @@ if(buildTable){
     topGenes_manyAsTopTADs_g_meanDistDir <- NA
     topGenes_manyAsTopTADs_g_meanEccentricity <- NA
     topGenes_manyAsTopTADs_g_meanBetweenness <- NA
+    topGenes_manyAsTopTADs_meanGOdim <- NA
   }
   
   
@@ -860,6 +948,10 @@ if(buildTable){
     
     intersectGenesRatio_manyAsPercent = intersectGenesRatio_manyAsPercent,
     intersectGenesRatio_manyAsTopTADs = intersectGenesRatio_manyAsTopTADs,
+    
+    topTADs_genes_meanGOdim = topTADs_genes_meanGOdim,
+    topGenes_manyAsTopTADs_meanGOdim = topGenes_manyAsTopTADs_meanGOdim,
+    topGenes_manyAsPercent_meanGOdim = topGenes_manyAsPercent_meanGOdim,
     
     
     stringsAsFactors=FALSE
@@ -1140,7 +1232,7 @@ all_ds_pval_DT <- foreach(curr_ds = unique(all_ds_DT$dataset), .combine='rbind')
     stopifnot(is.numeric(resultDT$bgRatio))
     resultDT$foldEnrichment <- resultDT$geneRatio/resultDT$bgRatio
     
-    cat("hello5\n")
+#    cat("hello5\n")
     
     for(var_plot in barplot_vars) {
       resultDT <- resultDT[order(resultDT[,var_plot], decreasing=T),]
@@ -1159,7 +1251,7 @@ all_ds_pval_DT <- foreach(curr_ds = unique(all_ds_DT$dataset), .combine='rbind')
     resultDT
   }
   
-cat("helloGG\n")  
+#cat("helloGG\n")  
   for(var_plot in barplot_vars) {
     
     ds_pval_dt$rank <- ds_pval_dt[,paste0("rank_", var_plot)]

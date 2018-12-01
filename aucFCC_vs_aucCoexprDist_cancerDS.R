@@ -176,9 +176,9 @@ my_colors_leg <- my_colors
 #names(my_colors_leg)[names(my_colors_leg) == "embryonic development"] <- "embryonic\ndevelopment"
 
 legend("topleft",
-       legend=names(my_colors_leg),
+       legend=unique(cancer_subAnnot[names(all_auc_FCC)]), #names(curr_colors),
        lty=1,
-       col = my_colors_leg,
+       col = unique(curr_colors),
        lwd = 5,
        bty="n",
        cex = 0.7)
@@ -343,7 +343,7 @@ stopifnot(nrow(plotDT) > 0)
 # plotDT$value <- plotDT$value - 1
 
 
-myylab <- paste0("% AUC increase - coexpr.")
+myylab <- paste0("% AUC increase - FCC.")
 # myTit <- paste0("AUC ratio - FCC")
 myTit <- paste0("% AUC increase - FCC")
 my_breaks <- scales::pretty_breaks(n = 5)(plotDT$value)
