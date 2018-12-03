@@ -107,6 +107,9 @@ curr_ratio="FCC"
 
 pcs_to_plot <- list(c(1,2), c(1,3))
 
+curr_ratio = "FCC"
+pcs = c(1,2)
+
 for(curr_ratio in iterate_ratios) {
   
   cat("... START ", curr_ratio, "\n")
@@ -179,7 +182,15 @@ for(curr_ratio in iterate_ratios) {
     
     ggcols <-  dataset_proc_colors[dat$dataset]
     
+    expVarA <- as.numeric(summary(pca_ratio)$importance["Proportion of Variance",][nPCa])
+    expVarB <- as.numeric(summary(pca_ratio)$importance["Proportion of Variance",][nPCb])
+    
+    xlab <- paste0("PC", nPCa, " (", round(expVarA*100,2), "%)")
+    ylab <- paste0("PC", nPCb, " (", round(expVarB*100,2), "%)")
+    
     p <- ggplot(dat, aes_string(x=paste0(pcA), y=paste0(pcB), label = "dataset")) +
+      scale_x_continuous(name=paste0(xlab))+
+      scale_y_continuous(name=paste0(ylab))+
       ggtitle(label = mytit, subtitle = mysubtit)+
       geom_point(color = ggcols) + 
       geom_text_repel(size = 3) +

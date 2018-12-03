@@ -73,7 +73,7 @@ stopifnot(all_ds %in% names(all_ds_aucCoexpr))
 ##########################################################################################
 
 all_ds_aucFC_file <- file.path("AUC_RATIO_CUMULVECT",
-                                    "FC", "auc_values.Rdata")
+                                    "FC", "raw", "auc_values.Rdata")
 
 all_ds_aucFC <- eval(parse(text = load(all_ds_aucFC_file)))
 all_ds_aucFC <- unlist(all_ds_aucFC[["rescAUC"]])
@@ -85,7 +85,9 @@ stopifnot(all_ds %in% names(all_ds_aucFC))
 ##########################################################################################
 ##########################################################################################
 
-all_ds_aucVar_file <- file.path("AUC_RATIO_CUMULVECT", "FC", "auc_values.Rdata")
+all_ds_aucVar_file <- file.path("AUC_RATIO_CUMULVECT", 
+                                "var", "raw" ,
+                                "auc_values.Rdata")
 
 all_ds_aucVar <- eval(parse(text = load(all_ds_aucVar_file)))
 all_ds_aucVar <- unlist(all_ds_aucVar[["rescAUC"]])

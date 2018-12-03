@@ -51,7 +51,7 @@ stopifnot(!is.na(exprTypeName))
 cat("... START with exprType =\t", exprType, "\n")
 cat("... START with nTopLast =\t", nTopLast, "\n")
 
-buildTable <- F
+buildTable <- TRUE
 
 # registerDoMC(ifelse(SSHFS, 2, 20))
 
@@ -312,7 +312,8 @@ for(auc_type in all_auc) {
        
        
        pch = 16, cex = 0.7,
-       ylab = paste0("AUC ratio ", auc_type),
+       ylab = paste0("% AUC increase - ", auc_type),
+
        # xlab = "mean most var (log10)",
        xlab = paste0("Mean most var. [log10] top ", nTopLast, " most variant genes\n(", exprTypeName, ")"),
        main = myTit
@@ -423,7 +424,7 @@ for(auc_type in all_auc) {
        xlim = range(xvar) + c(-rangeOffset, rangeOffset),
        ylim = range(yvar) + c(-rangeOffset, rangeOffset),
        pch = pointPch, cex = pointCex,
-       ylab = paste0("AUC ratio ", auc_type),
+       ylab = paste0("% AUC increase - ", auc_type),
        #xlab = "mean most var (log10)",
 	   xlab = paste0("Mean var. [log10] top ", nTopLast, " most variant genes\n(", exprTypeName, ")"),
        main = myTit,
@@ -458,7 +459,7 @@ cex.axis = cexAxis, cex.lab = cexLab
        xlim = range(xvar) + c(-rangeOffset, rangeOffset),
        ylim = range(yvar) + c(-rangeOffset, rangeOffset),
        pch = pointPch, cex = pointCex,col = curr_colors,
-       ylab = paste0("AUC ratio ", auc_type),
+       ylab = paste0("% AUC increase - ", auc_type),
        #xlab = "mean most var (log10)",
        xlab = paste0("Mean var. [log10] top ", nTopLast, " most variant genes\n(", exprTypeName, ")"),
        main = myTit,

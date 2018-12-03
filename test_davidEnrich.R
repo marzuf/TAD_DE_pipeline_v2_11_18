@@ -233,115 +233,122 @@ stopifnot(!is.na(topDS))
 curr_ds="TCGAcrc_msi_mss"
 
 
-all_ds_DT <- foreach(curr_ds = topDS, .combine='rbind') %dopar% {
-  txt <- paste0("*** START:\t", curr_ds, "\n")
-  printAndLog(txt, logFile)
-  
-  ### RETRIEVE TAD PVALUES
-  step11_fold <- file.path(dsFold, curr_ds, "11_runEmpPvalCombined")
-  stopifnot(file.exists(step11_fold))
-  tadpvalFile <- file.path(step11_fold, "emp_pval_combined.Rdata")
-  stopifnot(file.exists(tadpvalFile))
-  tad_pval <- eval(parse(text = load(tadpvalFile)))
-  tad_pval <- p.adjust(tad_pval, method = "BH")
-  # -> change here pval selection
-  selectTADs <- names(tad_pval[tad_pval <= pvalSelect])
-  nSelectTADs <- length(selectTADs)
-  
-  nTADs <- length(tad_pval)
-  
-  ### RETRIEVE GENES USED FOR THE LIMMA ANALYSIS - FOR THE UNIVERSE
-  step0_fold <- file.path(dsFold, curr_ds, "0_prepGeneData")
-  stopifnot(file.exists(step0_fold))
-  rnageneFile <- file.path(step0_fold, "rna_geneList.Rdata")
-  stopifnot(file.exists(rnageneFile))
-  rnaGenes <- eval(parse(text = load(rnageneFile)))
-  
-  ### RETRIEVE GENES PVALUES
-  step1_fold <- file.path(dsFold, curr_ds, "1_runGeneDE")
-  stopifnot(file.exists(step1_fold))
-  toptableFile <- file.path(step1_fold, "DE_topTable.Rdata")
-  stopifnot(file.exists(toptableFile))
-  topTable_DT <- eval(parse(text = load(toptableFile)))
-  stopifnot(!any(duplicated(topTable_DT$genes)))
-  stopifnot(topTable_DT$genes == rownames(topTable_DT))
-  gene_pval <- setNames(topTable_DT$adj.P.Val, topTable_DT$genes)
-  
-  ### SELECT UNIVERSE FOR THE DE GENES
-  # stopifnot(names(rnaGenes) %in% topTable_DT$genes)# not true CPM filter ?
-  stopifnot(topTable_DT$genes %in% names(rnaGenes))
-  # stopifnot(length(rnaGenes) == nrow(topTable_DT)) # not true CPM filter ?
-  stopifnot(length(rnaGenes) >= nrow(topTable_DT))
-  universe_rnaGenes <- as.character(rnaGenes)
-  
-  ### RETRIEVE GENES THAT ARE IN PIPELINE  
-  step0_fold <- file.path(dsFold, curr_ds, "0_prepGeneData")
-  stopifnot(file.exists(step0_fold))
-  pipelinegeneFile <- file.path(step0_fold, "pipeline_geneList.Rdata")
-  stopifnot(file.exists(pipelinegeneFile))
-  pipelineGenes <- eval(parse(text = load(pipelinegeneFile)))
-  stopifnot(names(pipelineGenes) %in% topTable_DT$genes)
-  
-  
-  ### SELECT UNIVERSE FOR THE TAD DE GENES
-  universe_tadGenes <- as.character(pipelineGenes)
-  
-  topTable_DT <- topTable_DT[topTable_DT$genes %in% names(pipelineGenes),]
-  genes_entrez <- sapply(topTable_DT$genes, function(x) pipelineGenes[x])
-  
-  stopifnot(!is.na(genes_entrez))
-  stopifnot(length(genes_entrez) == nrow(topTable_DT) )
-  stopifnot(names(pipelineGenes) %in% names(gene_pval))
-  # gene_pval <- setNames(topTable_DT$adj.P.Val, topTable_DT$genes)
-  entrez_pval <- setNames(topTable_DT$adj.P.Val, genes_entrez)
-  
-  nGenes <- length(entrez_pval)
-  
-  selectGenes <- names(entrez_pval[entrez_pval <= pvalSelect])
-  stopifnot(selectGenes %in% pipelineGenes)
-  nSelectGenes <- length(selectGenes)
-  
-  stopifnot(selectTADs %in% gene2tad_DT$region)
-  
-  if(nSelectTADs > 0){
-    stopifnot(selectTADs %in% gene2tad_DT$region)
-    selectTADs_genes <- gene2tad_DT$entrezID[gene2tad_DT$region %in% selectTADs]  
-    selectTADs_genes <- selectTADs_genes[selectTADs_genes %in% pipelineGenes]
-    stopifnot(selectTADs_genes %in% gene2tad_DT$entrezID)
-    stopifnot(selectTADs_genes %in% pipelineGenes)
-    nSelectTADs_genes <- length(selectTADs_genes)
+  all_ds_DT <- foreach(curr_ds = topDS, .combine='rbind') %dopar% {
+    txt <- paste0("*** START:\t", curr_ds, "\n")
+    printAndLog(txt, logFile)
     
-  } else {
-    nSelectTADs_genes <- 0
-  }
-  
-  if(nSelectGenes > 0){
-    stopifnot(selectGenes %in% gene2tad_DT$entrezID)
+    ### RETRIEVE TAD PVALUES
+    step11_fold <- file.path(dsFold, curr_ds, "11_runEmpPvalCombined")
+    stopifnot(file.exists(step11_fold))
+    tadpvalFile <- file.path(step11_fold, "emp_pval_combined.Rdata")
+    stopifnot(file.exists(tadpvalFile))
+    tad_pval <- eval(parse(text = load(tadpvalFile)))
+    tad_pval <- p.adjust(tad_pval, method = "BH")
+    # -> change here pval selection
+    selectTADs <- names(tad_pval[tad_pval <= pvalSelect])
+    nSelectTADs <- length(selectTADs)
+    
+    nTADs <- length(tad_pval)
+    
+    ### RETRIEVE GENES USED FOR THE LIMMA ANALYSIS - FOR THE UNIVERSE
+    step0_fold <- file.path(dsFold, curr_ds, "0_prepGeneData")
+    stopifnot(file.exists(step0_fold))
+    rnageneFile <- file.path(step0_fold, "rna_geneList.Rdata")
+    stopifnot(file.exists(rnageneFile))
+    rnaGenes <- eval(parse(text = load(rnageneFile)))
+    
+    ### RETRIEVE GENES PVALUES
+    step1_fold <- file.path(dsFold, curr_ds, "1_runGeneDE")
+    stopifnot(file.exists(step1_fold))
+    toptableFile <- file.path(step1_fold, "DE_topTable.Rdata")
+    stopifnot(file.exists(toptableFile))
+    topTable_DT <- eval(parse(text = load(toptableFile)))
+    stopifnot(!any(duplicated(topTable_DT$genes)))
+    stopifnot(topTable_DT$genes == rownames(topTable_DT))
+    gene_pval <- setNames(topTable_DT$adj.P.Val, topTable_DT$genes)
+    
+    ### SELECT UNIVERSE FOR THE DE GENES
+    # stopifnot(names(rnaGenes) %in% topTable_DT$genes)# not true CPM filter ?
+    stopifnot(topTable_DT$genes %in% names(rnaGenes))
+    # stopifnot(length(rnaGenes) == nrow(topTable_DT)) # not true CPM filter ?
+    stopifnot(length(rnaGenes) >= nrow(topTable_DT))
+    universe_rnaGenes <- as.character(rnaGenes)
+    
+    ### RETRIEVE GENES THAT ARE IN PIPELINE  
+    step0_fold <- file.path(dsFold, curr_ds, "0_prepGeneData")
+    stopifnot(file.exists(step0_fold))
+    pipelinegeneFile <- file.path(step0_fold, "pipeline_geneList.Rdata")
+    stopifnot(file.exists(pipelinegeneFile))
+    pipelineGenes <- eval(parse(text = load(pipelinegeneFile)))
+    stopifnot(names(pipelineGenes) %in% topTable_DT$genes)
+    
+    
+    ### SELECT UNIVERSE FOR THE TAD DE GENES
+    universe_tadGenes <- as.character(pipelineGenes)
+    
+    topTable_DT <- topTable_DT[topTable_DT$genes %in% names(pipelineGenes),]
+    genes_entrez <- sapply(topTable_DT$genes, function(x) pipelineGenes[x])
+    
+    stopifnot(!is.na(genes_entrez))
+    stopifnot(length(genes_entrez) == nrow(topTable_DT) )
+    stopifnot(names(pipelineGenes) %in% names(gene_pval))
+    # gene_pval <- setNames(topTable_DT$adj.P.Val, topTable_DT$genes)
+    entrez_pval <- setNames(topTable_DT$adj.P.Val, genes_entrez)
+    
+    nGenes <- length(entrez_pval)
+    
+    selectGenes <- names(entrez_pval[entrez_pval <= pvalSelect])
     stopifnot(selectGenes %in% pipelineGenes)
-  }
-  
-  
-  
-  david<-DAVIDWebService$new(email="marie.zufferey.1@unil.ch")
-  data(demoList1)
-  result<-addList(david, selectGenes,
-                  idType="ENTREZ_GENE_ID",
-                  listName="demoList1", listType="Gene")
-  result
-  
-  # listType="Background"   If required,    the  user  can  select  which  annotation  category  to  use,  e.g. GOTERM_BP_ALL, GOTERM_MF_ALL and GOTERM_CC_ALL
-  
-  setAnnotationCategories(david, c("GOTERM_BP_ALL",
-                                   + "GOTERM_MF_ALL", "GOTERM_CC_ALL"))
-  # Now, that everything is in order, the user can get the different reports to use
-  # right away or to save into a file for future recall.  For example the Functional
-  # Annotation  Clustering  can  be  obtained  on-line  on
-  # termCluster
-  # object,  or  as
-  # termClusterReport1.tab
-  # file by invoking:
-  termCluster<-getClusterReport(david, type="Term")
-  getClusterReportFile(david, type="Term",
-                       + fileName="termClusterReport1.tab")
-                       
-                       
+    nSelectGenes <- length(selectGenes)
+    
+    stopifnot(selectTADs %in% gene2tad_DT$region)
+    
+    if(nSelectTADs > 0){
+      stopifnot(selectTADs %in% gene2tad_DT$region)
+      selectTADs_genes <- gene2tad_DT$entrezID[gene2tad_DT$region %in% selectTADs]  
+      selectTADs_genes <- selectTADs_genes[selectTADs_genes %in% pipelineGenes]
+      stopifnot(selectTADs_genes %in% gene2tad_DT$entrezID)
+      stopifnot(selectTADs_genes %in% pipelineGenes)
+      nSelectTADs_genes <- length(selectTADs_genes)
+      
+    } else {
+      nSelectTADs_genes <- 0
+    }
+    
+    if(nSelectGenes > 0){
+      stopifnot(selectGenes %in% gene2tad_DT$entrezID)
+      stopifnot(selectGenes %in% pipelineGenes)
+    }
+    
+    
+    
+    david<-DAVIDWebService$new(email="marie.zufferey.1@unil.ch")
+    data(demoList1)
+    result<-addList(david, selectGenes,
+                       idType="ENTREZ_GENE_ID",
+                        listName="demoList1", listType="Gene")
+    result
+    
+    listType="Background"
+    .  If required,
+    the  user  can  select  which  annotation  category  to  use,  e.g.
+    GOTERM_BP_ALL
+    ,
+    GOTERM_MF_ALL
+    and
+    GOTERM_CC_ALL
+    .
+    R> setAnnotationCategories(david, c("GOTERM_BP_ALL",
+                                        + "GOTERM_MF_ALL", "GOTERM_CC_ALL"))
+    Now, that everything is in order, the user can get the different reports to use
+    right away or to save into a file for future recall.  For example the Functional
+    Annotation  Clustering  can  be  obtained  on-line  on
+    termCluster
+    object,  or  as
+    termClusterReport1.tab
+    file by invoking:
+      R> termCluster<-getClusterReport(david, type="Term")
+    R> getClusterReportFile(david, type="Term",
+                            + fileName="termClusterReport1.tab"
+                            
+                            

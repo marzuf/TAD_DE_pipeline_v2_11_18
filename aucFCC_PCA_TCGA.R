@@ -1,6 +1,6 @@
 
 startTime <- Sys.time()
-cat(paste0("> Rscript aucFCC_PCA_cancerDS.R\n"))
+cat(paste0("> Rscript aucFCC_PCA_TCGA.R\n"))
 
 suppressPackageStartupMessages(library(foreach, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE))
 suppressPackageStartupMessages(library(doMC, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE))
@@ -9,7 +9,7 @@ suppressPackageStartupMessages(library(ggrepel, warn.conflicts = FALSE, quietly 
 suppressPackageStartupMessages(library(ggthemes, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE))
 suppressPackageStartupMessages(library(reshape2, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE))
 
-# Rscript aucFCC_PCA_cancerDS.R
+# Rscript aucFCC_PCA_TCGA.R
 
 options(scipen=100)
 
@@ -39,7 +39,7 @@ length(dataset_proc_colors)
 caller <- "TopDom"
 script8_name <- "8c_runAllDown"
 
-outFold <- file.path("AUCFCC_PCA_cancerDS")
+outFold <- file.path("AUCFCC_PCA_TCGA")
 system(paste0("mkdir -p ", outFold))
 
 # logFile <- file.path(outFold, paste0("auccFCC_vs_aucCoexprDist_logFile.txt"))  
@@ -49,6 +49,8 @@ pipOutFold <- file.path(setDir, paste0("/mnt/ed4/marie/scripts/TAD_DE_pipeline_v
 all_datasets <- list.files(pipOutFold)
 
 all_datasets <- all_datasets[all_datasets %in% cancerDS]
+
+all_datasets <- all_datasets[grepl("^TCGA", all_datasets)]
 
 cat(paste0("# of datasets found: ", length(all_datasets), "\n"))
 
@@ -189,11 +191,13 @@ for(curr_ratio in iterate_ratios) {
     
     ggcols <-  curr_colors
     
+    
     expVarA <- as.numeric(summary(pca_ratio)$importance["Proportion of Variance",][nPCa])
     expVarB <- as.numeric(summary(pca_ratio)$importance["Proportion of Variance",][nPCb])
     
     xlab <- paste0("PC", nPCa, " (", round(expVarA*100,2), "%)")
     ylab <- paste0("PC", nPCb, " (", round(expVarB*100,2), "%)")
+    
     
     p <- ggplot(dat, aes_string(x=paste0(pcA), y=paste0(pcB), label = "dataset")) +
       scale_x_continuous(name=paste0(xlab))+

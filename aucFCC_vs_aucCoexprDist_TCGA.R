@@ -44,6 +44,10 @@ myWidthScatter <- myHeightScatter
 
 barcolors <- "gray48"
 
+famType1 <- "hgnc"
+famType2 <- "hgnc_family_short"
+
+
 ### HARD CODED
 caller <- "TopDom"
 script170_name <- "170_score_auc_pval_withShuffle"
@@ -83,6 +87,14 @@ all_auc <- foreach(curr_dataset = all_datasets) %dopar% {
                                   "AUC_COEXPRDIST_SORTNODUP", curr_dataset, "auc_values.Rdata")
   stopifnot(file.exists(aucCoexprDist_file))
   
+  aucCoexprDistSameFam_file <- file.path(setDir, paste0("/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2_", caller),
+                                         "AUC_COEXPRDIST_WITHFAM_SORTNODUP", paste0(curr_dataset, "_",famType1),
+                                         famType2, "auc_values.Rdata")
+  
+  if(!file.exists(aucCoexprDistSameFam_file)) cat("aucCoexprDistSameFam_file = ", aucCoexprDistSameFam_file, "\n")
+  stopifnot(file.exists(aucCoexprDistSameFam_file))
+  
+  
   all_ratios <- eval(parse(text = load(aucFCC_file)))
   aucFCC <- as.numeric(all_ratios["prodSignedRatio_auc_permGenes"])
   stopifnot(!is.na(aucFCC))
@@ -91,7 +103,15 @@ all_auc <- foreach(curr_dataset = all_datasets) %dopar% {
   aucCoexprDist <- as.numeric(all_aucDist["auc_ratio_same_over_diff_distVect"])
   stopifnot(!is.na(aucCoexprDist))
   
-  list(aucFCC = aucFCC, aucCoexprDist = aucCoexprDist)
+  all_aucDistSameFam <- eval(parse(text = load(aucCoexprDistSameFam_file)))
+  aucCoexprDist2 <- as.numeric(all_aucDistSameFam["auc_ratio_same_over_diff_distVect"])
+  stopifnot(!is.na(aucCoexprDist2))
+  aucCoexprDistSameFam <- as.numeric(all_aucDistSameFam["auc_ratio_sameFam_same_over_diff_distVect"])
+  stopifnot(!is.na(aucCoexprDistSameFam))
+  
+  stopifnot(round(aucCoexprDist,4)==round(aucCoexprDist2,4))
+  
+  list(aucFCC = aucFCC, aucCoexprDist = aucCoexprDist, aucCoexprDistSameFam=aucCoexprDistSameFam)  
   
 }
 names(all_auc) <- all_datasets
@@ -99,6 +119,9 @@ names(all_auc) <- all_datasets
 all_auc_FCC <- sapply(all_auc, function(x) x[["aucFCC"]])
 all_auc_CoexprDist <- sapply(all_auc, function(x) x[["aucCoexprDist"]])
 stopifnot(names(all_auc_FCC) == names(all_auc_CoexprDist))
+
+all_auc_CoexprDistSameFam <- sapply(all_auc, function(x) x[["aucCoexprDistSameFam"]])
+stopifnot(names(all_auc_FCC) == names(all_auc_CoexprDistSameFam))
 
 outFile <- file.path(outFold, "all_auc_FCC.Rdata")
 save(all_auc_FCC, file = outFile)
@@ -114,6 +137,82 @@ cat(paste0("... written: ", outFile, "\n"))
   outFile <- file.path(outFold, "all_auc_CoexprDist.Rdata")
   all_auc_CoexprDist <- eval(parse(text = load(outFile)))
 }
+
+##############################################################################################
+############################################## SCATTERPLOT ALL DATASETS  - coexpr dist same Fam vs coexpr dist
+##############################################################################################
+
+stopifnot(names(all_auc_FCC) == names(all_auc_CoexprDist) )
+stopifnot(names(all_auc_CoexprDistSameFam) == names(all_auc_CoexprDist) )
+stopifnot(names(all_auc_FCC) %in% names(dataset_proc_colors) )
+
+# to plot % of AUC increase
+all_auc_FCC <- (all_auc_FCC-1) * 100
+all_auc_CoexprDist <- (all_auc_CoexprDist-1) * 100
+all_auc_CoexprDistSameFam <- (all_auc_CoexprDistSameFam-1) * 100
+
+# myxlab <- "AUC ratio FCC"
+# myylab <- "AUC ratio coexpr."
+myTit <- "AUC coexpr. same fam. vs. AUC coexpr. same fam."
+myxlab <- paste0("% coexpr. AUC increase")
+myylab <- paste0("% coexpr. same fam AUC increase")
+myTit <- paste0("% AUC increase coexpr. same fam. vs. % AUC increase coexpr.")
+
+curr_colors <- as.character(cancer_subColors[as.character(cancer_subAnnot[names(all_auc_FCC)])])
+stopifnot(!is.na(curr_colors))
+
+outFile <- file.path(outFold, paste0("aucCoexprDistSameFam_vs_aucCoexprDist_TCGA_datasets.", plotType))
+do.call(plotType, list(outFile, height = myHeightScatter, width =myWidthScatter))
+plot(x = all_auc_CoexprDist,
+     y = all_auc_CoexprDistSameFam,
+     #     xlim = range(all_auc_FCC),#*c(0.95, 1.15),
+     #     ylim = range(all_auc_CoexprDist),#*c(0.95,1.15),
+     # xlim = range(all_auc_FCC)+c(-0.05,0.05),#*c(0.95, 1.15),
+     # ylim = range(all_auc_CoexprDist)+c(-0.05,0.05),#*c(0.95,1.15),
+     xlim = range(all_auc_CoexprDist)+c(-5,5),#*c(0.95, 1.15),
+     ylim = range(all_auc_CoexprDistSameFam)+c(-5, 5),#*c(0.95,1.15),
+     xlab = paste0(myxlab),
+     ylab = paste0(myylab),
+     pch = 16, cex=0.7,
+     col = curr_colors,
+     main = myTit)
+mtext(text = paste0(caller, " - # of datasets = ", length(all_auc_FCC)), side = 3)
+text(x = all_auc_CoexprDist,
+     y = all_auc_CoexprDistSameFam,
+     labels = names(all_auc_CoexprDist),
+     col = curr_colors,
+     pos=3, cex = 0.7)
+
+addCorr(x=all_auc_CoexprDist, 
+        y=all_auc_CoexprDistSameFam, 
+        legPos="topright", 
+        corMet="spearman",
+        bty="n") 
+
+# corTest <- cor.test(all_auc_FCC, all_auc_CoexprDist)
+# legTxt <- paste0("PCC = ", round(corTest$estimate,2), "\n(p-val =  ", sprintf("%1.2e", corTest$p.value), ")")
+#legend("topleft", legend = legTxt, bty="n")
+# legend("topright", legend = legTxt, bty="n")
+
+my_colors_leg <- my_colors
+#names(my_colors_leg)[names(my_colors_leg) == "psychiatric disorder"] <- "psychiatric\ndisorder"
+#names(my_colors_leg)[names(my_colors_leg) == "embryonic development"] <- "embryonic\ndevelopment"
+
+legend("topleft",
+       legend=unique(cancer_subAnnot[names(all_auc_FCC)]), #names(curr_colors),
+       lty=1,
+       col = unique(curr_colors),
+       lwd = 5,
+       bty="n",
+       cex = 0.7)
+
+# abline(lm(all_auc_CoexprDist ~ all_auc_FCC), col="grey", lty=2)
+add_curv_fit(x = all_auc_CoexprDist, y=all_auc_CoexprDistSameFam, withR2 = TRUE, R2shiftX = -0.03, R2shiftY = 0, col="grey", lty=2)
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
+
+#stop("--ok\n")
+
 
 ##############################################################################################
 ############################################## SCATTERPLOT ALL DATASETS
@@ -139,7 +238,7 @@ myTit <- paste0("% AUC increase coexpr. vs. FCC")
 curr_colors <- as.character(cancer_subColors[as.character(cancer_subAnnot[names(all_auc_FCC)])])
 stopifnot(!is.na(curr_colors))
 
-outFile <- file.path(outFold, paste0("aucFCC_vs_aucCoexprDist_cancer_datasets.", plotType))
+outFile <- file.path(outFold, paste0("aucFCC_vs_aucCoexprDist_TCGA_datasets.", plotType))
 do.call(plotType, list(outFile, height = myHeightScatter, width =myWidthScatter))
 plot(x = all_auc_FCC,
      y = all_auc_CoexprDist,
@@ -262,7 +361,7 @@ p_AUC <- ggplot(plotDT, aes(x = dataset, y = value, fill = variable)) +
 
 if(SSHFS) p_AUC
 
-outFile <- file.path(outFold, paste0("aucFCC_aucCoexprDist_cancer_datasets_barplot_orderFCC.", plotType))
+outFile <- file.path(outFold, paste0("aucFCC_aucCoexprDist_TCGA_datasets_barplot_orderFCC.", plotType))
 ggsave(p_AUC, filename = outFile, height = 6, width=12)
 cat(paste0("... written: ", outFile, "\n"))
 
@@ -315,7 +414,7 @@ p_AUC <- ggplot(plotDT, aes(x = dataset, y = value, fill = variable)) +
 
 if(SSHFS) p_AUC
 
-outFile <- file.path(outFold, paste0("aucFCC_aucCoexprDist_cancer_datasets_barplot_orderCoexpr.", plotType))
+outFile <- file.path(outFold, paste0("aucFCC_aucCoexprDist_TCGA_datasets_barplot_orderCoexpr.", plotType))
 ggsave(p_AUC, filename = outFile, height = 6, width=12)
 cat(paste0("... written: ", outFile, "\n"))
 
@@ -344,7 +443,7 @@ stopifnot(nrow(plotDT) > 0)
 # plotDT$value <- plotDT$value - 1
 
 
-myylab <- paste0("% AUC increase - FCC.")
+myylab <- paste0("% AUC increase - FCC")
 # myTit <- paste0("AUC ratio - FCC")
 myTit <- paste0("% AUC increase - FCC")
 my_breaks <- scales::pretty_breaks(n = 5)(plotDT$value)
@@ -390,7 +489,7 @@ p_AUC <- ggplot(plotDT, aes(x = dataset, y = value, fill = variable)) +
 
 if(SSHFS) p_AUC
 
-outFile <- file.path(outFold, paste0("aucFCC_cancer_datasets_barplot.", plotType))
+outFile <- file.path(outFold, paste0("aucFCC_TCGA_datasets_barplot.", plotType))
 ggsave(p_AUC, filename = outFile, height = myHeight, width=myWidth)
 cat(paste0("... written: ", outFile, "\n"))
 
@@ -457,7 +556,7 @@ p_AUC <- ggplot(plotDT, aes(x = dataset, y = value, fill = variable)) +
 
 if(SSHFS) p_AUC
 
-outFile <- file.path(outFold, paste0("aucCoexprDist_cancer_datasets_barplot.", plotType))
+outFile <- file.path(outFold, paste0("aucCoexprDist_TCGA_datasets_barplot.", plotType))
 ggsave(p_AUC, filename = outFile, height = myHeight, width=myWidth)
 cat(paste0("... written: ", outFile, "\n"))
 

@@ -7,17 +7,29 @@ all_plots=( "GOlog10_pval" "GOfoldEnrichment" "GOgeneRatio" "g_density" "g_diame
 
 all_ranks=( "FCC" "avg" )
 
+#for rank in ${all_ranks[@]}; do
+#    for dir in ${mainDirs[@]}; do   
+#        for toplot in ${all_plots[@]}; do
+
+#            mkdir -p $dir/all_plots/$rank/$toplot
+#            cp $dir/BP/*/$rank/*${toplot}_boxplot_nojitter.svg $dir/all_plots/$rank/$toplot
+#            cp $dir/BP/*/$rank/*${toplot}_violinplot.svg $dir/all_plots/$rank/$toplot
+
+#        done
+#    done
+#done
+
+
+
+toplotvar="aucCoexprDist_aucFCC"
+
 for rank in ${all_ranks[@]}; do
     for dir in ${mainDirs[@]}; do   
-        for toplot in ${all_plots[@]}; do
-
-            mkdir -p $dir/all_plots/$rank/$toplot
-            cp $dir/BP/*/$rank/*${toplot}_boxplot_nojitter.svg $dir/all_plots/$rank/$toplot
-            cp $dir/BP/*/$rank/*${toplot}_violinplot.svg $dir/all_plots/$rank/$toplot
-
-        done
+        mkdir -p $dir/all_plots/$rank/$toplotvar
+        cp $dir/BP/*/$rank/*${toplotvar}.svg $dir/all_plots/$rank/$toplotvar
     done
 done
+
 
 #mkdir CMP_TADs_GENES_GO_pvalSelect_top/all_plots
 

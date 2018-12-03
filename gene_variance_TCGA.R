@@ -1,8 +1,8 @@
-# Rscript gene_variance_cancerDS.R <exprType>
-# Rscript gene_variance_cancerDS.R fpkm
-# Rscript gene_variance_cancerDS.R log2fpkm
-# Rscript gene_variance_cancerDS.R NBvar
-# Rscript gene_variance_cancerDS.R voom
+# Rscript gene_variance_TCGA.R <exprType>
+# Rscript gene_variance_TCGA.R fpkm
+# Rscript gene_variance_TCGA.R log2fpkm
+# Rscript gene_variance_TCGA.R NBvar
+# Rscript gene_variance_TCGA.R voom
 cat("> START: gene_variance.R\n")
 
 SSHFS <- FALSE
@@ -322,7 +322,7 @@ for(auc_type in all_auc) {
        
        
        pch = 16, cex = 0.7,
-       ylab = paste0("AUC ratio ", auc_type),
+       ylab = paste0("% AUC increase - ", auc_type),
        # xlab = "mean most var (log10)",
        xlab = paste0("Mean most var. [log10] top ", nTopLast, " most variant genes\n(", exprTypeName, ")"),
        main = myTit
@@ -433,7 +433,7 @@ for(auc_type in all_auc) {
        xlim = range(xvar) + c(-rangeOffset, rangeOffset),
        ylim = range(yvar) + c(-rangeOffset, rangeOffset),
        pch = pointPch, cex = pointCex,
-       ylab = paste0("AUC ratio ", auc_type),
+       ylab = paste0("% AUC increase - ", auc_type),
        #xlab = "mean most var (log10)",
 	   xlab = paste0("Mean var. [log10] top ", nTopLast, " most variant genes\n(", exprTypeName, ")"),
        main = myTit,
@@ -468,7 +468,7 @@ cex.axis = cexAxis, cex.lab = cexLab
        xlim = range(xvar) + c(-rangeOffset, rangeOffset),
        ylim = range(yvar) + c(-rangeOffset, rangeOffset),
        pch = pointPch, cex = pointCex,col = curr_colors,
-       ylab = paste0("AUC ratio ", auc_type),
+       ylab = paste0("% AUC increase - ", auc_type),
        #xlab = "mean most var (log10)",
        xlab = paste0("Mean var. [log10] top ", nTopLast, " most variant genes\n(", exprTypeName, ")"),
        main = myTit,
