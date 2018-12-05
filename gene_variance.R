@@ -270,6 +270,9 @@ for(auc_type in all_auc) {
   cat("... start", auc_type, "\n")
   
   curr_auc <- eval(parse(text = paste0("auc", auc_type)))
+  
+  curr_auc <- (curr_auc-1)*100
+  
   stopifnot(all_ds_geneVarDT$dataset %in% names(curr_auc))
   all_ds_geneVarDT[, auc_type] <- curr_auc[all_ds_geneVarDT$dataset]
 
@@ -380,6 +383,9 @@ for(auc_type in all_auc) {
   
   
   curr_auc <- eval(parse(text = paste0("auc", auc_type)))
+
+  curr_auc <- (curr_auc-1)*100
+
   stopifnot(all_ds_geneVarDT$dataset %in% names(curr_auc))
   all_ds_geneVarDT[, auc_type] <- curr_auc[all_ds_geneVarDT$dataset]
   

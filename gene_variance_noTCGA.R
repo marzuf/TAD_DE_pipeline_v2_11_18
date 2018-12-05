@@ -28,7 +28,7 @@ head(score_DT)
 dataset_proc_colors <- setNames(score_DT$proc_col, score_DT$dataset)
 length(dataset_proc_colors)
 
-cancerDS <- score_DT$dataset[score_DT$process_short == "cancer"]
+#cancerDS <- score_DT$dataset[score_DT$process_short == "cancer"]
 
 registerDoMC(ifelse(SSHFS,2,40))
 
@@ -90,7 +90,7 @@ if(buildTable) {
     curr_ds <- basename(pipOutFold)
     cat("... START", curr_ds, "\n")
 
-    if(! curr_ds %in% cancerDS) return(NULL)
+#    if(! curr_ds %in% cancerDS) return(NULL)
     if(grepl("^TCGA", curr_ds)) return(NULL)
   
     ds_pipFolder <- file.path(pipMainFolder, pipOutFold)
@@ -202,10 +202,10 @@ aucFCC <- foreach(curr_ds = all_ds, .combine='c') %dopar% {
 names(aucFCC) <- all_ds
 
 stopifnot(names(aucFCC) %in% names(dataset_proc_colors) )
-# curr_colors <- dataset_proc_colors[names(aucFCC)]
+curr_colors <- dataset_proc_colors[names(aucFCC)]
 
-curr_colors <- as.character(cancer_subColors[as.character(cancer_subAnnot[names(aucFCC)])])
-stopifnot(!is.na(curr_colors))
+#curr_colors <- as.character(cancer_subColors[as.character(cancer_subAnnot[names(aucFCC)])])
+#stopifnot(!is.na(curr_colors))
 
 aucCoexprDist <- foreach(curr_ds = all_ds, .combine='c') %dopar% {
   ### RETRIEVE FCC
@@ -280,6 +280,10 @@ for(auc_type in all_auc) {
   cat("... start", auc_type, "\n")
   
   curr_auc <- eval(parse(text = paste0("auc", auc_type)))
+
+  curr_auc <- (curr_auc-1)*100
+
+
   stopifnot(all_ds_geneVarDT$dataset %in% names(curr_auc))
   all_ds_geneVarDT[, auc_type] <- curr_auc[all_ds_geneVarDT$dataset]
 
@@ -389,6 +393,10 @@ for(auc_type in all_auc) {
   
   
   curr_auc <- eval(parse(text = paste0("auc", auc_type)))
+
+  curr_auc <- (curr_auc-1)*100
+
+
   stopifnot(all_ds_geneVarDT$dataset %in% names(curr_auc))
   all_ds_geneVarDT[, auc_type] <- curr_auc[all_ds_geneVarDT$dataset]
   
@@ -493,9 +501,9 @@ cex.axis = cexAxis, cex.lab = cexLab
   my_colors <- my_colors[my_colors %in% curr_colors]
   
   legend("topleft",
-         legend=unique(cancer_subAnnot[names(aucFCC)]),
+         legend=names(my_colors),
          lty=1,
-         col = unique(curr_colors),
+         col=my_colors,
          lwd = 5,
          bty="n",
          cex = 0.7)

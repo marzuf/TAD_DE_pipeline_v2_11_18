@@ -1,8 +1,8 @@
-# Rscript gene_variance_TCGA.R <exprType>
-# Rscript gene_variance_TCGA.R fpkm
-# Rscript gene_variance_TCGA.R log2fpkm
-# Rscript gene_variance_TCGA.R NBvar
-# Rscript gene_variance_TCGA.R voom
+# Rscript gene_variance_cancerDS.R <exprType>
+# Rscript gene_variance_cancerDS.R fpkm
+# Rscript gene_variance_cancerDS.R log2fpkm
+# Rscript gene_variance_cancerDS.R NBvar
+# Rscript gene_variance_cancerDS.R voom
 cat("> START: gene_variance.R\n")
 
 SSHFS <- FALSE
@@ -71,7 +71,7 @@ all_setting_files <- list.files(settingFolder, full.names=T)
 all_setting_files <- all_setting_files[grep(".R$", all_setting_files)]
 stopifnot(length(all_setting_files) > 0)
 
-outFold <- file.path(paste0("GENE_VARIANCE_TCGA"), toupper(exprType))
+outFold <- file.path(paste0("GENE_VARIANCE_cancerNoTCGA"), toupper(exprType))
 system(paste0("mkdir -p ", outFold))
 
 plotType <- "svg"
@@ -91,7 +91,7 @@ if(buildTable) {
     cat("... START", curr_ds, "\n")
 
     if(! curr_ds %in% cancerDS) return(NULL)
-    if(!grepl("^TCGA", curr_ds)) return(NULL)
+    if(grepl("^TCGA", curr_ds)) return(NULL)
   
     ds_pipFolder <- file.path(pipMainFolder, pipOutFold)
     cat(ds_pipFolder,"\n")
@@ -282,6 +282,7 @@ for(auc_type in all_auc) {
   curr_auc <- eval(parse(text = paste0("auc", auc_type)))
 
   curr_auc <- (curr_auc-1)*100
+
 
   stopifnot(all_ds_geneVarDT$dataset %in% names(curr_auc))
   all_ds_geneVarDT[, auc_type] <- curr_auc[all_ds_geneVarDT$dataset]
