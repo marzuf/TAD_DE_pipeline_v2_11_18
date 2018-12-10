@@ -63,6 +63,9 @@ geneVarFile <- file.path(setDir,
                            "/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2_11_18",
                             "GENE_VARIANCE/LOG2FPKM/all_ds_geneVarDT.Rdata"
                            )
+
+cat(paste0("... variance retrieved from: ", geneVarFile, "\n"))
+
 stopifnot(file.exists(geneVarFile))
 
 all_datasets <- list.files(pipOutFolder)
@@ -109,7 +112,7 @@ if(buildTable) {
     cat("... load auc coexpr dist\n")
     aucCoexprDistFile <- file.path(aucCoexprDistFolder,
                                    curr_dataset, "auc_values.Rdata")
-    if(!file.exists(aucCoexprDistFile)) return(NULL)
+    # if(!file.exists(aucCoexprDistFile)) return(NULL)
     all_coexprDistAUC <- eval(parse(text = load(aucCoexprDistFile)))
     coexprDistAUC <- all_coexprDistAUC[["auc_ratio_same_over_diff_distVect"]]
     cat("coexprDistAUC = ", coexprDistAUC, "\n")
@@ -117,7 +120,7 @@ if(buildTable) {
     
     cat("... load auc FCC \n")
     aucFCC_file <- file.path(pipOutFolder, curr_dataset, script170_name, "allratio_auc_pval.Rdata")
-    if(!file.exists(aucFCC_file)) return(NULL)
+    # if(!file.exists(aucFCC_file)) return(NULL)
     stopifnot(file.exists(aucFCC_file))
     all_fccAUC <- eval(parse(text = load(aucFCC_file)))
     
@@ -129,7 +132,7 @@ if(buildTable) {
                           curr_dataset, 
                           script0_name,
                           "pipeline_geneList.Rdata")
-    if(!file.exists(geneFile)) return(NULL)
+    # if(!file.exists(geneFile)) return(NULL)
     pipeline_geneList <- eval(parse(text = load(geneFile)))
     
     tmp_g2t <- gene2tad_DT[gene2tad_DT$entrezID %in% pipeline_geneList,]
@@ -147,7 +150,7 @@ if(buildTable) {
                            curr_dataset, 
                            script1_name,
                            "DE_topTable.Rdata")
-    if(!file.exists(limmaFile)) return(NULL)
+    # if(!file.exists(limmaFile)) return(NULL)
     limmaDT <- eval(parse(text = load(limmaFile)))
     
     stopifnot(limmaDT$genes == rownames(limmaDT))
@@ -158,7 +161,7 @@ if(buildTable) {
 
     cat("... load TAD\n")
     tadpvalFile <-  file.path(pipOutFolder, curr_dataset, script11_name, "emp_pval_combined.Rdata")
-    if(!file.exists(tadpvalFile)) return(NULL)
+    # if(!file.exists(tadpvalFile)) return(NULL)
     tad_pval <- eval(parse(text = load(tadpvalFile)))
     tad_pval <- p.adjust(tad_pval, method = "BH")
     
@@ -166,7 +169,7 @@ if(buildTable) {
     cat("... load setting files\n")
     settingF <- file.path(settingFilesFolder,
                           paste0("run_settings_", curr_dataset, ".R"))
-    if(!file.exists(tadpvalFile)) return(NULL)
+    # if(!file.exists(tadpvalFile)) return(NULL)
     stopifnot(file.exists(settingF))
     source(settingF)
     sample1_file <- file.path(setDir, sample1_file)
@@ -210,6 +213,7 @@ if(buildTable) {
     
   }
   rownames(datasets_variables_DT) <- NULL
+  stopifnot(nrow(datasets_variables_DT) == length(all_datasets))
   outFile <- file.path(outFold, "datasets_variables_DT.Rdata")
   save(datasets_variables_DT, file = outFile)
   cat(paste0("... written: ", outFile, "\n"))
@@ -221,11 +225,12 @@ if(buildTable) {
   datasets_variables_DT <- eval(parse(text = load(outFile)))
 }
 
+# put it before adding color and type columns...
+all_vars <- colnames(datasets_variables_DT)[! colnames(datasets_variables_DT) %in% c("dataset", "nSamp1", "nSamp2")]
 
-
-datasets_variables_DT$color <- ifelse(datasets_variables_DT$dataset %in% noTCGA_cancerDS, "green",
-                                  ifelse(datasets_variables_DT$dataset %in% TCGA_cancerDS, "red",
-                                         ifelse(datasets_variables_DT$dataset %in% no_cancerDS, "black", NA)))
+datasets_variables_DT$color <- ifelse(datasets_variables_DT$dataset %in% noTCGA_cancerDS, dataset_colors["noTCGA_cancerDS"],
+                                      ifelse(datasets_variables_DT$dataset %in% TCGA_cancerDS, dataset_colors["TCGA_cancerDS"],
+                                             ifelse(datasets_variables_DT$dataset %in% no_cancerDS, dataset_colors["no_cancerDS"], NA)))
 stopifnot(!is.na(datasets_variables_DT$color))
 
 
@@ -235,7 +240,11 @@ datasets_variables_DT$dsType <- ifelse(datasets_variables_DT$dataset %in% noTCGA
 
 stopifnot(!is.na(datasets_variables_DT$dsType))
 
+datasets_variables_DT$dsType <- factor(datasets_variables_DT$dsType, levels = c("not_cancer", "cancer_notTCGA","TCGA"))
+stopifnot(!is.na(datasets_variables_DT$dsType))
+datasets_variables_DT <- datasets_variables_DT[order(as.numeric(datasets_variables_DT$dsType)),]
 
+# stop("--ok\n")
 
 ######################################################################################
 ###################################################################################### # draw the boxplots
@@ -244,10 +253,12 @@ stopifnot(!is.na(datasets_variables_DT$dsType))
 # GSE101521_control_mdd      1.130653 1.136174     29     21       50  1.380952  14869            0  2459         402       6.046767                5   0.5967525
 # GSE102073_stic_nostic      1.187492 1.506043     43     42       85  1.023810  14747            0  2436        1946       6.053777                5   5.0150059
 
-all_vars <- colnames(datasets_variables_DT)[! colnames(datasets_variables_DT) %in% c("dataset", "nSamp1", "nSamp2")]
 curr_var  = "nAllSamp"
 
-datasets_variables_DT$dsTypeLabel <- gsub("_", "\n", datasets_variables_DT$dsType)
+datasets_variables_DT$dsTypeLabel <- gsub("_", "\n", as.character(datasets_variables_DT$dsType))
+datasets_variables_DT$dsTypeLabel <- factor(datasets_variables_DT$dsTypeLabel, levels = gsub("_", "\n", levels(datasets_variables_DT$dsType)))
+stopifnot(!is.na(datasets_variables_DT$dsTypeLabel))
+
 
 for(curr_var in all_vars) {
   
@@ -265,8 +276,6 @@ for(curr_var in all_vars) {
 }
 
 
-        
-
 ######################################################################################
 ######################################################################################
 
@@ -274,7 +283,7 @@ stopifnot(!duplicated(datasets_variables_DT$dataset))
 rownames(datasets_variables_DT) <- datasets_variables_DT$dataset
 datasets_variables_DT$dataset <- NULL
 
-other_vars <- colnames(datasets_variables_DT)
+other_vars <- all_vars
 
 titNames <- c(
   coexprDistAUC="AUC ratio - pairwise coexpr.",
@@ -309,7 +318,7 @@ offSets <- c(
 )
 
 
-stopifnot(colnames(datasets_variables_DT) %in% names(titNames))
+# stopifnot(colnames(datasets_variables_DT) %in% names(titNames))
 
 mySub <- paste0("all datasets (n=", nrow(datasets_variables_DT), ")")
 
@@ -317,7 +326,7 @@ stopifnot(rownames(datasets_variables_DT) %in% names(dataset_proc_colors))
 curr_colors <- dataset_proc_colors[rownames(datasets_variables_DT)]
 
 for(ref_var in c("coexprDistAUC", "fccAUC")) {
-  for(curr_var in colnames(datasets_variables_DT) ) {
+  for(curr_var in other_vars ) {
     
     outFile <- file.path(outFold, paste0(ref_var, "_", curr_var, ".", plotType))
     

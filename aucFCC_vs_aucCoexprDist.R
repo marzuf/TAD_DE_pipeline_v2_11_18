@@ -73,6 +73,8 @@ myylab <- paste0("% AUC increase")
 
 if(buildTable) {
 
+#cat(all_datasets[56], "\n") ; stop("--ok--\n")
+
 all_auc <- foreach(curr_dataset = all_datasets) %dopar% {
   
   aucFCC_file <- file.path(pipOutFold, curr_dataset, script170_name, "allratio_auc_pval.Rdata")
@@ -142,6 +144,9 @@ cat(paste0("... written: ", outFile, "\n"))
 
 stopifnot(names(all_auc_FCC) == names(all_auc_CoexprDist) )
 stopifnot(names(all_auc_CoexprDistSameFam) == names(all_auc_CoexprDist) )
+
+cat(names(all_auc_FCC)[!names(all_auc_FCC) %in% names(dataset_proc_colors) ], "\n")
+
 stopifnot(names(all_auc_FCC) %in% names(dataset_proc_colors) )
 
 # to plot % of AUC increase
@@ -216,7 +221,7 @@ cat(paste0("... written: ", outFile, "\n"))
 
 
 
-stop("--ok\n")
+#stop("--ok\n")
 
 ##############################################################################################
 ############################################## SCATTERPLOT ALL DATASETS

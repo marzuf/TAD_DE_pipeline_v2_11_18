@@ -77,26 +77,30 @@ stopifnot(length(all_setting_files) > 0)
 outFold <- file.path(paste0("DATASETS_EXPRDIST"), toupper(exprType))
 system(paste0("mkdir -p ", outFold))
 
-plotType <- "svg"
+plotType <- "png"
 myHeight <- ifelse(plotType == "png", 400, 7)
 myWidth <- ifelse(plotType == "png", 400, 7)
 
 # all_setting_files <- all_setting_files[1:5]
 
+cat(all_setting_files[83],"\n")
+
+# stop("--ok\n")
+
 if(buildTable) {
   all_ds_fpkmCounts <- foreach(ds_file = all_setting_files) %dopar% {
     
-    if(!file.exists(ds_file)) return(NULL)
+    # if(!file.exists(ds_file)) return(NULL)
     stopifnot(file.exists(ds_file))
     cat("... source settingFile", basename(ds_file), "\n")
     source(ds_file)
     
     curr_ds <- basename(pipOutFold)
-    cat("... START", curr_ds, "\n")
+    # cat("... START", curr_ds, "\n")
     
     ds_pipFolder <- file.path(pipMainFolder, pipOutFold)
-    if(!file.exists(ds_pipFolder)) return(NULL)
-    cat(ds_pipFolder,"\n")
+    # if(!file.exists(ds_pipFolder)) return(NULL)
+    if(!file.exists(ds_pipFolder)) cat(ds_pipFolder,"\n")
     stopifnot(file.exists(ds_pipFolder))
     
     cat("... load samp1\n")
@@ -133,12 +137,28 @@ if(buildTable) {
     bpCounts <- boxplot(as.numeric(data.matrix(curr_exprDT)), 
                         plot=FALSE)
     
+    curr_ds <- gsub("run_settings_(.+)\\.R$", "\\1", basename(ds_file))
+    curr_col <- ifelse(curr_ds %in% noTCGA_cancerDS, dataset_colors["noTCGA_cancerDS"],
+                       ifelse(curr_ds %in% TCGA_cancerDS, dataset_colors["TCGA_cancerDS"],
+                              ifelse(curr_ds %in% no_cancerDS, dataset_colors["no_cancerDS"], NA)))
+    
+    
+    outFile <- file.path(outFold, paste0(curr_ds, "_boxplot_expr_dist.", plotType))
+    do.call(plotType, list(outFile, height = myHeight, width = myWidth))
+    boxplot(as.numeric(data.matrix(curr_exprDT)), 
+            col = curr_col, 
+            main=paste0(curr_ds, ": dist. expr. count")
+            )
+    mtext(side = 3, text = paste0("(inputDataType=", inputDataType,")"))
+    foo <- dev.off()
+    cat(paste0("... written: ", outFile,"\n"))
+    
     dataType <- inputDataType
     
     list(bpCounts = bpCounts, dataType = dataType)
   }
-  dataset_names <- gsub("run_settings_(.+)\\.R", "\\1", basename(all_setting_files))
-  names(all_ds_fpkmCounts) <- all_setting_files
+  dataset_names <- gsub("run_settings_(.+)\\.R$", "\\1", basename(all_setting_files))
+  names(all_ds_fpkmCounts) <- dataset_names
   # names(all_ds_fpkmCounts) <- all_setting_files
   outFile <- file.path(outFold, "all_ds_fpkmCounts.Rdata")
   save(all_ds_fpkmCounts, file = outFile)
@@ -167,7 +187,7 @@ boxplot_y_max <- max(unlist(lapply(all_ds_fpkmCounts, function(x) {
 })))
 
 boxplot_y_min <- min(unlist(lapply(all_ds_fpkmCounts, function(x) {
-  bxpVar <- x[["bpCounts"]][["out"]]
+  bxpVar <- x[["bpCounts"]]
   min(bxpVar$out, na.rm=T)
 })))
 
@@ -182,11 +202,13 @@ for(i in seq_len(nrow(all_ds_fpkmCounts))) {
   
   curr_ds <- names(all_ds_fpkmCounts)[i]
   
-  curr_col  <- ifelse(curr_ds %in% noTCGA_cancerDS, "green",
-                                        ifelse(curr_ds %in% TCGA_cancerDS, "red",
-                                               ifelse(curr_ds %in% no_cancerDS, "black", NA)))
-  stopifnot(!is.na(curr_col))
+  curr_col <- ifelse(curr_ds %in% noTCGA_cancerDS, dataset_colors["noTCGA_cancerDS"],
+                                        ifelse(curr_ds %in% TCGA_cancerDS, dataset_colors["TCGA_cancerDS"],
+                                               ifelse(curr_ds %in% no_cancerDS, dataset_colors["no_cancerDS"], NA)))
   
+  
+  
+  stopifnot(!is.na(curr_col))
   
   # retrieve the boxplot
   boxplotInfo <- all_ds_fpkmCounts[[i]][["bpCounts"]]
