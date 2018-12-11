@@ -32,6 +32,10 @@ cancerDS <- score_DT$dataset[score_DT$process_short == "cancer"]
 
 registerDoMC(ifelse(SSHFS,2,40))
 
+correctTCGA_factor <- 10^6
+# I used scaled estimates -> similar to FPKM, but not multiplied by 10^6
+
+
 args <- commandArgs(trailingOnly = TRUE)
 # stopifnot(length(args) > 0)
 exprType <- "log2fpkm"
@@ -74,9 +78,26 @@ stopifnot(length(all_setting_files) > 0)
 outFold <- file.path(paste0("GENE_VARIANCE_cancerDS"), toupper(exprType))
 system(paste0("mkdir -p ", outFold))
 
+logFile <- file.path(outFold, "gene_variance_logFile.txt")
+if(SSHFS) logFile <- ""
+if(!SSHFS) system(paste0("rm -f ", logFile))
+
 plotType <- "svg"
 myHeight <- ifelse(plotType == "png", 400, 7)
 myWidth <- ifelse(plotType == "png", 400, 7)
+
+# return NULL if file not found ??? [if yes -> build table skipping missing files, otherwise raise error and stop]
+returnNull <-  FALSE
+
+txt <- paste0("... exprType\t=\t", exprType, "\n")
+printAndLog(txt, logFile)
+txt <- paste0("... nTopLast\t=\t", nTopLast, "\n")
+printAndLog(txt, logFile)
+txt <- paste0("... correctTCGA_factor\t=\t", correctTCGA_factor, "\n")
+printAndLog(txt, logFile)
+txt <- paste0("... returnNull\t=\t", as.character(returnNull), "\n")
+printAndLog(txt, logFile)
+
 
 # all_setting_files <- all_setting_files[1:5]
 

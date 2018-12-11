@@ -20,7 +20,6 @@ myWidthGG <- 10
 myHeight <- ifelse(plotType == "png", 300, 7)
 myWidth <- myHeight
 
-
 buildTable <- TRUE
 
 registerDoMC(ifelse(SSHFS, 2, 30))
@@ -28,7 +27,6 @@ registerDoMC(ifelse(SSHFS, 2, 30))
 if(SSHFS) setwd("/media/electron/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2_11_18")
 
 source("analysis_utils.R")
-
 
 outFold <- "BUILD_TABLE_NBR_SIGNIF"
 system(paste0("mkdir -p ", outFold))
@@ -212,8 +210,6 @@ for(myxvar in all_scatter_var_x) {
   }
 }
 
-
-
 all_cols <- c("darkgreen", "darkorange", "darkorchid", "deeppink", "dodgerblue4", "firebrick", "gold", "slateblue", "darkgrey")
 # all_cols <- c("dodgerblue4", "darkorange2")
 stopifnot(length(all_cols) >= length(all_pval_thresh)+1)
@@ -247,7 +243,6 @@ for(signifLevel in all_signifLevel){
       
       stopifnot(nrow(signif_DT) > 0)
       
-      
       signif_DT_m <- melt(signif_DT, id="dataset")
       signif_DT_m$signifLevel <- gsub(paste0(".+_adjPvalThresh(.+)$"), "\\1", signif_DT_m$variable)
       # signif_DT_m$signifLevel[signif_DT_m$variable == paste0("nbr", signifType)] <- 1
@@ -259,7 +254,6 @@ for(signifLevel in all_signifLevel){
       stopifnot(length(unique(signif_DT_m$signifLevel)) == length(unique(pval_to_plot)))
       signif_DT_m$signifLevel <- factor(signif_DT_m$signifLevel, 
                                         levels = as.character(sort(as.numeric(as.character(unique(signif_DT_m$signifLevel))), decreasing=T)))
-      
       
       signifTypeTit <- ifelse(signifType != "TADs", tolower(signifType), signifType)
       

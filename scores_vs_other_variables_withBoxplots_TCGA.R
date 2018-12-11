@@ -1,7 +1,7 @@
 startTime <- Sys.time()
-cat(paste0("> Rscript scores_vs_other_variables_withBoxplots.R\n"))
+cat(paste0("> Rscript scores_vs_other_variables_withBoxplots_TCGA.R\n"))
 
-#  Rscript scores_vs_other_variables_withBoxplots.R
+#  Rscript scores_vs_other_variables_withBoxplots_TCGA.R
 
 library(foreach)
 library(doMC)
@@ -38,7 +38,7 @@ myHeight <- ifelse(plotType == "png", 400, 10)
 # myWidth <- ifelse(plotType == "png", 600, 10)
 myWidth <- myHeight
 
-outFold <- file.path("SCORES_VS_OTHER_VARIABLES_WITH_BOXPLOTS")
+outFold <- file.path("SCORES_VS_OTHER_VARIABLES_WITH_BOXPLOTS_TCGA")
 system(paste0("mkdir -p ", outFold))
 
 logFile <- file.path(outFold, "score_vs_other_variables_logFile.txt")
@@ -46,7 +46,6 @@ if(!SSHFS) system(paste0("rm -f ", logFile))
 if(SSHFS) logFile <- ""
 
 plotAxisCex <- 1.5
-
 
 aucCoexprDistFolder <- file.path(setDir, 
                                  "/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2_TopDom/AUC_COEXPRDIST_SORTNODUP")
@@ -109,6 +108,10 @@ txt <- paste0("... found # TCGA_cancerDS\t=\t", length(TCGA_cancerDS) , "\n" )
 printAndLog(txt, logFile)
 txt <- paste0("... found # no_cancerDS\t=\t", length(no_cancerDS) , "\n" )
 printAndLog(txt, logFile)
+
+
+all_datasets <- all_datasets[grepl("^TCGA", all_datasets)]
+
 
 if(buildTable) {
   
@@ -241,26 +244,46 @@ if(buildTable) {
   datasets_variables_DT <- eval(parse(text = load(outFile)))
 }
 
+
+
+noVar <- which(apply(datasets_variables_DT, 2, function(x) length(unique(x) == 1)) == 1)
+
+if(length(noVar) > 0) {
+  cat("... unique value for: ", paste0(colnames(datasets_variables_DT)[noVar], collapse=";"), "\n")
+  datasets_variables_DT[,noVar] <- NULL
+}
+
+
+
 # put it before adding color and type columns...
 all_vars <- colnames(datasets_variables_DT)[! colnames(datasets_variables_DT) %in% c("dataset", "nSamp1", "nSamp2")]
 
-datasets_variables_DT$color <- ifelse(datasets_variables_DT$dataset %in% noTCGA_cancerDS, dataset_colors["noTCGA_cancerDS"],
-                                      ifelse(datasets_variables_DT$dataset %in% TCGA_cancerDS, dataset_colors["TCGA_cancerDS"],
-                                             ifelse(datasets_variables_DT$dataset %in% no_cancerDS, dataset_colors["no_cancerDS"], NA)))
+# datasets_variables_DT$color <- ifelse(datasets_variables_DT$dataset %in% noTCGA_cancerDS, dataset_colors["noTCGA_cancerDS"],
+#                                       ifelse(datasets_variables_DT$dataset %in% TCGA_cancerDS, dataset_colors["TCGA_cancerDS"],
+#                                              ifelse(datasets_variables_DT$dataset %in% no_cancerDS, dataset_colors["no_cancerDS"], NA)))
+# stopifnot(!is.na(datasets_variables_DT$color))
+# 
+# datasets_variables_DT$dsType <- ifelse(datasets_variables_DT$dataset %in% noTCGA_cancerDS, "cancer_notTCGA",
+#                                    ifelse(datasets_variables_DT$dataset %in% TCGA_cancerDS, "TCGA",
+#                                           ifelse(datasets_variables_DT$dataset %in% no_cancerDS, "not_cancer", NA)))
+# stopifnot(!is.na(datasets_variables_DT$dsType))
+# datasets_variables_DT$dsType <- factor(datasets_variables_DT$dsType, levels = c("not_cancer", "cancer_notTCGA","TCGA"))
+# stopifnot(!is.na(datasets_variables_DT$dsType))
+# datasets_variables_DT <- datasets_variables_DT[order(as.numeric(datasets_variables_DT$dsType)),]
+
+
+datasets_variables_DT$color <- unlist(sapply(datasets_variables_DT$dataset, function(x) cancer_subColors[cancer_subAnnot[x]]))
 stopifnot(!is.na(datasets_variables_DT$color))
 
-
-datasets_variables_DT$dsType <- ifelse(datasets_variables_DT$dataset %in% noTCGA_cancerDS, "cancer_notTCGA",
-                                   ifelse(datasets_variables_DT$dataset %in% TCGA_cancerDS, "TCGA",
-                                          ifelse(datasets_variables_DT$dataset %in% no_cancerDS, "not_cancer", NA)))
-
+datasets_variables_DT$dsType <- unlist(sapply(datasets_variables_DT$dataset, function(x) cancer_subAnnot[x]))
 stopifnot(!is.na(datasets_variables_DT$dsType))
 
-datasets_variables_DT$dsType <- factor(datasets_variables_DT$dsType, levels = c("not_cancer", "cancer_notTCGA","TCGA"))
-stopifnot(!is.na(datasets_variables_DT$dsType))
-datasets_variables_DT <- datasets_variables_DT[order(as.numeric(datasets_variables_DT$dsType)),]
+# datasets_variables_DT$dsType <- factor(datasets_variables_DT$dsType, levels = c("not_cancer", "cancer_notTCGA","TCGA"))
+# stopifnot(!is.na(datasets_variables_DT$dsType))
+# datasets_variables_DT <- datasets_variables_DT[order(as.numeric(datasets_variables_DT$dsType)),]
 
 # stop("--ok\n")
+
 
 ######################################################################################
 ###################################################################################### # draw the boxplots
@@ -271,10 +294,12 @@ datasets_variables_DT <- datasets_variables_DT[order(as.numeric(datasets_variabl
 
 curr_var  = "nAllSamp"
 
-datasets_variables_DT$dsTypeLabel <- gsub("_", "\n", as.character(datasets_variables_DT$dsType))
-datasets_variables_DT$dsTypeLabel <- factor(datasets_variables_DT$dsTypeLabel, levels = gsub("_", "\n", levels(datasets_variables_DT$dsType)))
-stopifnot(!is.na(datasets_variables_DT$dsTypeLabel))
+# datasets_variables_DT$dsTypeLabel <- gsub("_", "\n", as.character(datasets_variables_DT$dsType))
+# datasets_variables_DT$dsTypeLabel <- factor(datasets_variables_DT$dsTypeLabel, levels = gsub("_", "\n", levels(datasets_variables_DT$dsType)))
+# stopifnot(!is.na(datasets_variables_DT$dsTypeLabel))
 
+datasets_variables_DT$dsTypeLabel <- datasets_variables_DT$dsType
+stopifnot(!is.na(datasets_variables_DT$dsTypeLabel))
 
 for(curr_var in all_vars) {
   
@@ -338,8 +363,12 @@ offSets <- c(
 
 mySub <- paste0("all datasets (n=", nrow(datasets_variables_DT), ")")
 
-stopifnot(rownames(datasets_variables_DT) %in% names(dataset_proc_colors))
-curr_colors <- dataset_proc_colors[rownames(datasets_variables_DT)]
+# stopifnot(rownames(datasets_variables_DT) %in% names(dataset_proc_colors))
+# curr_colors <- dataset_proc_colors[rownames(datasets_variables_DT)]
+curr_colors <- as.character(cancer_subColors[as.character(cancer_subAnnot[rownames(datasets_variables_DT)])])
+stopifnot(!is.na(curr_colors))
+my_colors <- cancer_subColors
+
 
 for(ref_var in c("coexprDistAUC", "fccAUC")) {
   for(curr_var in other_vars ) {

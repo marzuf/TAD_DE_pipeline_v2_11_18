@@ -29,6 +29,8 @@ add_curv_fit <- function(x, y, withR2 = TRUE, R2shiftX = 0, R2shiftY = 0,...) {
 
 options(scipen=100)
 
+plotCex <- 1.5
+
 buildTable <- T
 
 SSHFS <- F
@@ -175,7 +177,9 @@ plot(x = all_auc_CoexprDist,
      ylab = paste0(myylab),
      pch = 16, cex=0.7,
      col = curr_colors,
-     main = myTit)
+     main = myTit,
+     cex.lab = plotCex, cex.axis = plotCex
+)
 mtext(text = paste0(caller, " - # of datasets = ", length(all_auc_FCC)), side = 3)
 text(x = all_auc_CoexprDist,
      y = all_auc_CoexprDistSameFam,
@@ -252,7 +256,9 @@ plot(x = all_auc_FCC,
      ylab = paste0(myylab),
      pch = 16, cex=0.7,
      col = curr_colors,
-     main = myTit)
+     main = myTit,
+    cex.lab = plotCex, cex.axis = plotCex
+)
 mtext(text = paste0(caller, " - # of datasets = ", length(all_auc_FCC)), side = 3)
 text(x = all_auc_FCC,
      y = all_auc_CoexprDist,

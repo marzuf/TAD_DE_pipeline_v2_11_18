@@ -32,6 +32,9 @@ cancerDS <- score_DT$dataset[score_DT$process_short == "cancer"]
 
 registerDoMC(ifelse(SSHFS,2,40))
 
+correctTCGA_factor <- 10^6
+# I used scaled estimates -> similar to FPKM, but not multiplied by 10^6
+
 args <- commandArgs(trailingOnly = TRUE)
 # stopifnot(length(args) > 0)
 exprType <- "log2fpkm"
@@ -58,7 +61,6 @@ buildTable <- TRUE
 
 source(file.path(setDir, "/mnt/ed4/marie/scripts/EZH2_final_MAPQ/ezh2_utils_fct.R"))
 
-
 source("analysis_utils.R")
 
 settingFolder <- file.path(setDir, "/mnt/ed4/marie/scripts/TAD_DE_pipeline/SETTING_FILES_cleanInput")
@@ -74,11 +76,31 @@ stopifnot(length(all_setting_files) > 0)
 outFold <- file.path(paste0("GENE_VARIANCE_cancerNoTCGA"), toupper(exprType))
 system(paste0("mkdir -p ", outFold))
 
+logFile <- file.path(outFold, "gene_variance_cancerNoTCGA_logFile.txt")
+if(SSHFS) logFile <- ""
+if(!SSHFS) system(paste0("rm -f ", logFile))
+
+
+
 plotType <- "svg"
 myHeight <- ifelse(plotType == "png", 400, 7)
 myWidth <- ifelse(plotType == "png", 400, 7)
 
 # all_setting_files <- all_setting_files[1:5]
+
+# return NULL if file not found ??? [if yes -> build table skipping missing files, otherwise raise error and stop]
+returnNull <-  FALSE
+
+txt <- paste0("... exprType\t=\t", exprType, "\n")
+printAndLog(txt, logFile)
+txt <- paste0("... nTopLast\t=\t", nTopLast, "\n")
+printAndLog(txt, logFile)
+txt <- paste0("... correctTCGA_factor\t=\t", correctTCGA_factor, "\n")
+printAndLog(txt, logFile)
+txt <- paste0("... returnNull\t=\t", as.character(returnNull), "\n")
+printAndLog(txt, logFile)
+
+
 
 if(buildTable) {
   all_ds_geneVarDT <- foreach(ds_file = all_setting_files, .combine="rbind") %dopar% {
@@ -127,6 +149,11 @@ if(buildTable) {
     
     curr_exprDT <- exprDT[rownames(exprDT) %in% names(geneList), c(samp1,samp2)]  
     stopifnot(is.numeric(curr_exprDT[1,1]))
+
+    if(grepl("TCGA", curr_ds)) {
+      cat("!!! For TCGA data, correctTCGA_factor = ", correctTCGA_factor, "\n")
+      curr_exprDT <- curr_exprDT * correctTCGA_factor
+    }
     
     if(exprType == "log2fpkm") {
       curr_exprDT <- log2(curr_exprDT + 1)
@@ -190,7 +217,7 @@ aucFCC <- foreach(curr_ds = all_ds, .combine='c') %dopar% {
   ### RETRIEVE FCC
   step17_fold <- file.path(dsFold, curr_ds, "170_score_auc_pval_withShuffle")
   aucFCC_file <- file.path(step17_fold, "allratio_auc_pval.Rdata")
-  stopifnot(file.exists(aucFCC_file))
+  if(returnNull){ if(!file.exists(aucFCC_file)) return(NULL) } else {stopifnot(file.exists(aucFCC_file))}
   aucCoexprDist_file <- file.path(setDir, paste0("/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2_", "TopDom"),
                                   "AUC_COEXPRDIST_SORTNODUP", curr_ds, "auc_values.Rdata")
   stopifnot(file.exists(aucCoexprDist_file))

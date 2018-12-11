@@ -27,6 +27,8 @@ add_curv_fit <- function(x, y, withR2 = TRUE, R2shiftX = 0, R2shiftY = 0,...) {
 }
 
 
+plotCex <- 1.5
+
 options(scipen=100)
 
 buildTable <- T
@@ -178,7 +180,9 @@ plot(x = all_auc_CoexprDist,
      ylab = paste0(myylab),
      pch = 16, cex=0.7,
      col = curr_colors,
-     main = myTit)
+     main = myTit,
+     cex.lab = plotCex, cex.axis = plotCex
+)
 mtext(text = paste0(caller, " - # of datasets = ", length(all_auc_FCC)), side = 3)
 text(x = all_auc_CoexprDist,
      y = all_auc_CoexprDistSameFam,
@@ -258,7 +262,9 @@ plot(x = all_auc_FCC,
      ylab = paste0(myylab),
      pch = 16, cex=0.7,
      col = curr_colors,
-     main = myTit)
+     main = myTit,
+    cex.lab = plotCex, cex.axis = plotCex
+)
 mtext(text = paste0(caller, " - # of datasets = ", length(all_auc_FCC)), side = 3)
 text(x = all_auc_FCC,
      y = all_auc_CoexprDist,
@@ -494,6 +500,53 @@ ggsave(p_AUC, filename = outFile, height = myHeight, width=myWidth)
 cat(paste0("... written: ", outFile, "\n"))
 
 
+auc_DT_m$tcga_col <- ifelse(grepl("^TCGA", as.character(auc_DT_m$dataset)), "forestgreen", "gray")
+
+tcga_col <- sapply(as.character(levels(auc_DT_m$dataset)), function(x) ifelse(grepl("^TCGA", as.character(x)), "forestgreen", "gray") )
+
+p_AUC <- ggplot(plotDT, aes(x = dataset, y = value, fill = tcga_col)) +
+  geom_bar(stat="identity", position="dodge", width = 0.7) +
+  scale_x_discrete(name="")+
+  ggtitle(label=myTit) +
+  scale_y_continuous(name=paste0(myylab),
+                     breaks = my_breaks,
+                     labels = my_labels
+                     # breaks = scales::pretty_breaks(n = 5)
+                     ) +#, limits = c(0, max(auc_DT_m$value)+0.05))+
+  # facet_grid(~dataset, switch="x") +
+  coord_cartesian(expand = FALSE) +
+  scale_fill_manual(values = c(forestgreen = "forestgreen", gray = "gray"),
+                    labels = c(auc_fcc = "FCC", auc_coexpr = "coexpr."),
+                    guide = FALSE )+
+  labs(fill  = "") +
+  theme( # Increase size of axis lines
+    # top, right, bottom and left
+#    plot.margin = unit(c(1, 1, 4.5, 1), "lines"),
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    panel.grid = element_blank(),
+    # panel.grid.major = element_line(colour = "lightpink"),
+    # strip.text.x = element_text(size = 6),
+    axis.text.x = element_text( hjust=1,vjust = 0.5, size=6, angle = 90, color = tcga_col),
+    axis.line.x = element_line(size = .2, color = "black"),
+    axis.line.y = element_line(size = .3, color = "black"),
+#    axis.ticks.x = element_blank(),
+    axis.text.y = element_text(color="black", hjust=1,vjust = 0.5),
+    axis.title.y = element_text(color="black", size=12),
+    axis.title.x = element_text(color="black", size=12),
+    panel.border = element_blank(),
+    panel.background = element_rect(fill = "transparent"),
+    legend.background =  element_rect(),
+    legend.key = element_blank()
+    # axis.text.x=element_text(size=10, angle=90, vjust=0.5, hjust=1)
+  ) #+
+  # geom_hline(yintercept = 1, linetype = 2)
+
+if(SSHFS) p_AUC
+
+outFile <- file.path(outFold, paste0("aucFCC_all_datasets_barplot_highlightTCGA.", plotType))
+ggsave(p_AUC, filename = outFile, height = myHeight, width=myWidth)
+cat(paste0("... written: ", outFile, "\n"))
+
 
 # auc_DT <- auc_DT[order(auc_DT$auc_coexpr, decreasing = TRUE),]
 # auc_DT_m$dataset <- factor(as.character(auc_DT_m$dataset), levels = as.character(auc_DT$dataset))
@@ -557,6 +610,79 @@ outFile <- file.path(outFold, paste0("aucCoexprDist_all_datasets_barplot.", plot
 ggsave(p_AUC, filename = outFile, height = myHeight, width=myWidth)
 cat(paste0("... written: ", outFile, "\n"))
 
+
+
+auc_DT <- auc_DT[order(auc_DT$auc_coexpr, decreasing = TRUE),]
+auc_DT$dataset <- factor(as.character(auc_DT$dataset), levels = as.character(auc_DT$dataset))
+auc_DT_m$dataset <- factor(as.character(auc_DT_m$dataset), levels = as.character(auc_DT$dataset))
+
+plotDT <- auc_DT_m[auc_DT_m$variable == "auc_coexpr",]
+stopifnot(nrow(plotDT) > 0)
+# plotDT$value <- plotDT$value - 1
+
+curr_colors <- dataset_proc_colors[as.character(levels(auc_DT_m$dataset))]
+
+auc_DT_m$tcga_col <- ifelse(grepl("^TCGA", as.character(auc_DT_m$dataset)), "forestgreen", "gray")
+
+tcga_col <- sapply(as.character(levels(auc_DT_m$dataset)), function(x) ifelse(grepl("^TCGA", as.character(x)), "forestgreen", "gray") )
+
+myylab <- paste0("% AUC increase - coexpr.")
+
+my_breaks <- scales::pretty_breaks(n = 5)(plotDT$value)
+# my_labels <- my_breaks + 1
+my_labels <- my_breaks
+
+p_AUC <- ggplot(plotDT, aes(x = dataset, y = value, fill = tcga_col)) +
+  geom_bar(stat="identity", position="dodge", width = 0.7) +
+  ggtitle(label=paste0(myylab)) + 
+  scale_x_discrete(name="")+
+  scale_y_continuous(name=paste0(myylab),
+                     breaks = my_breaks,
+                     labels = my_labels
+                     # breaks = scales::pretty_breaks(n = 5)
+                     ) +#, limits = c(0, max(auc_DT_m$value)+0.05))+
+  # facet_grid(~dataset, switch="x") +
+  coord_cartesian(expand = FALSE) +
+  scale_fill_manual(values = c(forestgreen = "forestgreen", gray = "gray"),
+                    labels = c(auc_fcc = "FCC", auc_coexpr = "coexpr."),
+                    guide = FALSE )+
+  labs(fill  = "") +
+  theme( # Increase size of axis lines
+    # top, right, bottom and left
+#    plot.margin = unit(c(1, 1, 4.5, 1), "lines"),
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    panel.grid = element_blank(),
+    # panel.grid.major = element_line(colour = "lightpink"),
+    # strip.text.x = element_text(size = 6),
+    axis.text.x = element_text( hjust=1,vjust = 0.5, size=6, angle = 90, color = tcga_col),
+    axis.line.x = element_line(size = .2, color = "black"),
+    axis.line.y = element_line(size = .3, color = "black"),
+#    axis.ticks.x = element_blank(),
+    axis.text.y = element_text(color="black", hjust=1,vjust = 0.5),
+    axis.title.y = element_text(color="black", size=12),
+    axis.title.x = element_text(color="black", size=12),
+    panel.border = element_blank(),
+    panel.background = element_rect(fill = "transparent"),
+    legend.background =  element_rect(),
+    legend.key = element_blank()
+    # axis.text.x=element_text(size=10, angle=90, vjust=0.5, hjust=1)
+  )#+
+  # geom_hline(yintercept = 1, linetype = 2)
+
+if(SSHFS) p_AUC
+
+outFile <- file.path(outFold, paste0("aucCoexprDist_all_datasets_barplot_highlightTCGA.", plotType))
+ggsave(p_AUC, filename = outFile, height = myHeight, width=myWidth)
+cat(paste0("... written: ", outFile, "\n"))
+
+
+
+
+######################################################################################
+######################################################################################
+######################################################################################
+cat("*** DONE\n")
+cat(paste0(startTime, "\n", Sys.time(), "\n"))
 
 
 

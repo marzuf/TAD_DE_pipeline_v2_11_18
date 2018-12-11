@@ -25,7 +25,7 @@ add_curv_fit <- function(x, y, withR2 = TRUE, R2shiftX = 0, R2shiftY = 0,...) {
          cex = 0.7)
   }
 }
-
+plotCex <- 1.5
 
 options(scipen=100)
 
@@ -162,6 +162,9 @@ myTit <- paste0("% AUC increase coexpr. same fam. vs. % AUC increase coexpr.")
 
 
 curr_colors <- as.character(cancer_subColors[as.character(cancer_subAnnot[names(all_auc_FCC)])])
+
+names(all_auc_FCC)[! names(all_auc_FCC) %in% names(cancer_subAnnot)] 
+
 stopifnot(!is.na(curr_colors))
 
 outFile <- file.path(outFold, paste0("aucCoexprDistSameFam_vs_aucCoexprDist_cancer_datasets.", plotType))
@@ -178,7 +181,9 @@ plot(x = all_auc_CoexprDist,
      ylab = paste0(myylab),
      pch = 16, cex=0.7,
      col = curr_colors,
-     main = myTit)
+     main = myTit,
+     cex.lab = plotCex, cex.axis = plotCex
+)
 mtext(text = paste0(caller, " - # of datasets = ", length(all_auc_FCC)), side = 3)
 text(x = all_auc_CoexprDist,
      y = all_auc_CoexprDistSameFam,
@@ -218,8 +223,7 @@ add_curv_fit(x = all_auc_CoexprDist, y=all_auc_CoexprDistSameFam, withR2 = TRUE,
 foo <- dev.off()
 cat(paste0("... written: ", outFile, "\n"))
 
-stop("--ok\n")
-
+#stop("--ok\n")
 
 ############################################## SCATTERPLOT ALL DATASETS
 ##############################################################################################
@@ -258,7 +262,9 @@ plot(x = all_auc_FCC,
      ylab = paste0(myylab),
      pch = 16, cex=0.7,
      col = curr_colors,
-     main = myTit)
+     main = myTit,
+     cex.lab = plotCex, cex.axis = plotCex
+)
 mtext(text = paste0(caller, " - # of datasets = ", length(all_auc_FCC)), side = 3)
 text(x = all_auc_FCC,
      y = all_auc_CoexprDist,

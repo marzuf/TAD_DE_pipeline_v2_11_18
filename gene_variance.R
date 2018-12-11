@@ -31,6 +31,9 @@ length(dataset_proc_colors)
 
 registerDoMC(ifelse(SSHFS,2,40))
 
+correctTCGA_factor <- 10^6
+# I used scaled estimates -> similar to FPKM, but not multiplied by 10^6
+
 args <- commandArgs(trailingOnly = TRUE)
 # stopifnot(length(args) > 0)
 exprType <- "log2fpkm"
@@ -74,9 +77,26 @@ plotType <- "svg"
 myHeight <- ifelse(plotType == "png", 400, 7)
 myWidth <- ifelse(plotType == "png", 400, 7)
 
+logFile <- file.path(outFold, "gene_variance_logFile.txt")
+if(SSHFS) logFile <- ""
+if(!SSHFS) system(paste0("rm -f ", logFile))
+
 # all_setting_files <- all_setting_files[1:5]
 
 #cat(all_setting_files[54], "\n");stop("--ok--\n")
+
+# return NULL if file not found ??? [if yes -> build table skipping missing files, otherwise raise error and stop]
+returnNull <-  FALSE
+
+txt <- paste0("... exprType\t=\t", exprType, "\n")
+printAndLog(txt, logFile)
+txt <- paste0("... nTopLast\t=\t", nTopLast, "\n")
+printAndLog(txt, logFile)
+txt <- paste0("... correctTCGA_factor\t=\t", correctTCGA_factor, "\n")
+printAndLog(txt, logFile)
+txt <- paste0("... returnNull\t=\t", as.character(returnNull), "\n")
+printAndLog(txt, logFile)
+
 
 if(buildTable) {
   all_ds_geneVarDT <- foreach(ds_file = all_setting_files, .combine="rbind") %dopar% {
@@ -90,9 +110,8 @@ if(buildTable) {
   
 
     ds_pipFolder <- file.path(pipMainFolder, pipOutFold)
-    if(!file.exists(ds_pipFolder)) return(NULL)
-    cat(ds_pipFolder,"\n")
-    stopifnot(file.exists(ds_pipFolder))
+#    cat(ds_pipFolder,"\n")
+    if(returnNull){ if(!file.exists(ds_pipFolder)) return(NULL) } else { stopifnot(file.exists(ds_pipFolder)) }
     
     cat("... load samp1\n")
     samp1 <- eval(parse(text = load(file.path(setDir, sample1_file))))
@@ -126,8 +145,8 @@ if(buildTable) {
     stopifnot(is.numeric(curr_exprDT[1,1]))
     
     if(grepl("TCGA", curr_ds)) {
-      cat("!!! For TCGA data: *1000\n")
-      curr_exprDT <- curr_exprDT * 1000
+      cat("!!! For TCGA data, correctTCGA_factor = ", correctTCGA_factor, "\n")
+      curr_exprDT <- curr_exprDT * correctTCGA_factor
     }
     
     if(exprType == "log2fpkm") {
@@ -194,12 +213,11 @@ aucFCC <- foreach(curr_ds = all_ds, .combine='c') %dopar% {
   ### RETRIEVE FCC
   step17_fold <- file.path(dsFold, curr_ds, "170_score_auc_pval_withShuffle")
   aucFCC_file <- file.path(step17_fold, "allratio_auc_pval.Rdata")
-#  if(!file.exists(aucFCC_file))return(NULL)
-  stopifnot(file.exists(aucFCC_file))
+  if(returnNull){ if(!file.exists(aucFCC_file)) return(NULL) } else {stopifnot(file.exists(aucFCC_file))}
   aucCoexprDist_file <- file.path(setDir, paste0("/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2_", "TopDom"),
                                   "AUC_COEXPRDIST_SORTNODUP", curr_ds, "auc_values.Rdata")
 
-#  if(!file.exists(aucCoexprDist_file))return(NULL)
+  if(returnNull){  if(!file.exists(aucCoexprDist_file)) return(NULL)}
   stopifnot(file.exists(aucCoexprDist_file))
   all_ratios <- eval(parse(text = load(aucFCC_file)))
   aucFCC <- as.numeric(all_ratios["prodSignedRatio_auc_permGenes"])
@@ -218,8 +236,7 @@ aucCoexprDist <- foreach(curr_ds = all_ds, .combine='c') %dopar% {
   step17_fold <- file.path(dsFold, curr_ds, "170_score_auc_pval_withShuffle")
   aucCoexprDist_file <- file.path(setDir, paste0("/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2_", "TopDom"),
                                   "AUC_COEXPRDIST_SORTNODUP", curr_ds, "auc_values.Rdata")
-  if(!file.exists(aucCoexprDist_file))return(NULL)
-  stopifnot(file.exists(aucCoexprDist_file))
+  if(returnNull){  if(!file.exists(aucCoexprDist_file)) return(NULL)} else {stopifnot(file.exists(aucCoexprDist_file)) }
   all_aucDist <- eval(parse(text = load(aucCoexprDist_file)))
   aucCoexprDist <- as.numeric(all_aucDist["auc_ratio_same_over_diff_distVect"])
   stopifnot(!is.na(aucCoexprDist))
