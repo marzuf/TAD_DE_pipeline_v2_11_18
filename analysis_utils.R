@@ -26,8 +26,10 @@ add_curv_fit <- function(x, y, withR2 = TRUE, R2shiftX = 0, R2shiftY = 0,...) {
 addCorr <- function(x, y, legPos="topright", corMet="pearson", ...) {
   corMet <- tolower(corMet)
   stopifnot(corMet %in% c("pearson", "kendall", "spearman"))
-  x <- x[!is.na(x) & !is.na(y)]
-  y <- y[!is.na(x) & !is.na(y)]
+  x2 <- x[!is.na(x) & !is.na(y)]
+  y2 <- y[!is.na(x) & !is.na(y)]
+  x <- x2
+  y <- y2
   stopifnot(length(x) == length(y))
 
   if(length(x) < 3) {
