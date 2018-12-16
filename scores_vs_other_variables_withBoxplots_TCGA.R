@@ -45,7 +45,7 @@ logFile <- file.path(outFold, "score_vs_other_variables_logFile.txt")
 if(!SSHFS) system(paste0("rm -f ", logFile))
 if(SSHFS) logFile <- ""
 
-plotAxisCex <- 1.5
+plotAxisCex <- 1.2
 
 aucCoexprDistFolder <- file.path(setDir, 
                                  "/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2_TopDom/AUC_COEXPRDIST_SORTNODUP")
@@ -252,7 +252,7 @@ if(length(noVar) > 0) {
   cat("... unique value for: ", paste0(colnames(datasets_variables_DT)[noVar], collapse=";"), "\n")
   datasets_variables_DT[,noVar] <- NULL
 }
-
+# => remove median -> same single value -> cannot add the curve to the plot
 
 
 # put it before adding color and type columns...
@@ -301,6 +301,8 @@ curr_var  = "nAllSamp"
 datasets_variables_DT$dsTypeLabel <- datasets_variables_DT$dsType
 stopifnot(!is.na(datasets_variables_DT$dsTypeLabel))
 
+# all_vars="medianGenesByTAD"
+head(datasets_variables_DT)
 for(curr_var in all_vars) {
   
   outFile <- file.path(outFold, paste0(curr_var, "_", "cancer_TCGA_boxplot.", plotType))
@@ -310,12 +312,14 @@ for(curr_var in all_vars) {
           boxfill = unique(datasets_variables_DT$color),
           main = paste0(curr_var),
           ylab = paste0(curr_var),
-          las = 2)  
+          las = 2,
+           cex.lab = plotAxisCex, cex.axis = plotAxisCex
+)  
   foo <- dev.off()
   cat(paste0("... written: ", outFile, "\n"))
   
 }
-
+# stop("--ok\n")
 
 ######################################################################################
 ######################################################################################

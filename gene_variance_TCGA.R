@@ -3,7 +3,7 @@
 # Rscript gene_variance_TCGA.R log2fpkm
 # Rscript gene_variance_TCGA.R NBvar
 # Rscript gene_variance_TCGA.R voom
-cat("> START: gene_variance.R\n")
+cat("> START: gene_variance_TCGA.R\n")
 
 SSHFS <- FALSE
 setDir <- ifelse(SSHFS, "/media/electron", "")
@@ -17,8 +17,8 @@ startTime <- Sys.time()
 
 pointPch <- 16
 pointCex <- 1
-cexAxis <- 1
-cexLab <- 1
+cexAxis <- 1.2
+cexLab <- 1.2
 
 rangeOffset <- 0.15
 

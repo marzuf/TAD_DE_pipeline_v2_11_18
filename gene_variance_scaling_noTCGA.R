@@ -1,9 +1,9 @@
-# Rscript gene_variance_cancerDS.R <exprType>
-# Rscript gene_variance_cancerDS.R fpkm
-# Rscript gene_variance_cancerDS.R log2fpkm
-# Rscript gene_variance_cancerDS.R NBvar
-# Rscript gene_variance_cancerDS.R voom
-cat("> START: gene_variance_noTCGA.R\n")
+# Rscript gene_variance_scaling_noTCGA.R <exprType>
+# Rscript gene_variance_scaling_noTCGA.R fpkm
+# Rscript gene_variance_scaling_noTCGA.R log2fpkm
+# Rscript gene_variance_scaling_noTCGA.R NBvar
+# Rscript gene_variance_scaling_noTCGA.R voom
+cat("> START: gene_variance_scaling_noTCGA.R\n")
 
 SSHFS <- FALSE
 setDir <- ifelse(SSHFS, "/media/electron", "")
@@ -74,7 +74,7 @@ all_setting_files <- list.files(settingFolder, full.names=T)
 all_setting_files <- all_setting_files[grep(".R$", all_setting_files)]
 stopifnot(length(all_setting_files) > 0)
 
-outFold <- file.path(paste0("GENE_VARIANCE_noTCGA"), toupper(exprType))
+outFold <- file.path(paste0("GENE_VARIANCE_SCALING_noTCGA"), toupper(exprType))
 system(paste0("mkdir -p ", outFold))
 
 plotType <- "svg"
@@ -175,6 +175,10 @@ if(buildTable) {
           
         stopifnot(is.numeric(curr_exprDT[1,1]))
       }
+
+    # rescale by the 75th quantile
+    quantileValue <- as.numeric(quantile(as.numeric(as.matrix(curr_exprDT)), probs=0.75, na.rm=T))
+    curr_exprDT <- curr_exprDT/quantileValue
     
     geneVar <- apply(curr_exprDT, 1,  var, na.rm=T)
     geneVar <- sort(geneVar, decreasing = TRUE)

@@ -17,8 +17,8 @@ startTime <- Sys.time()
 
 pointPch <- 16
 pointCex <- 1
-cexAxis <- 1
-cexLab <- 1
+cexAxis <- 1.2
+cexLab <- 1.2
 
 rangeOffset <- 0.15
 
@@ -353,7 +353,8 @@ for(auc_type in all_auc) {
 
        # xlab = "mean most var (log10)",
        xlab = paste0("Mean most var. [log10] top ", nTopLast, " most variant genes\n(", exprTypeName, ")"),
-       main = myTit
+       main = myTit,
+       cex.axis = cexAxis, cex.lab = cexLab
   )
   text(x = log10(all_ds_geneVarDT$meanMostVar),
        y = all_ds_geneVarDT[, auc_type],

@@ -45,7 +45,7 @@ logFile <- file.path(outFold, "score_vs_other_variables_logFile.txt")
 if(!SSHFS) system(paste0("rm -f ", logFile))
 if(SSHFS) logFile <- ""
 
-plotAxisCex <- 1.5
+plotAxisCex <- 1.2
 
 
 aucCoexprDistFolder <- file.path(setDir, 
@@ -285,7 +285,9 @@ for(curr_var in all_vars) {
           boxfill = unique(datasets_variables_DT$color),
           main = paste0(curr_var),
           ylab = paste0(curr_var),
-          las = 2)  
+          las = 2,
+          cex.lab = plotAxisCex, cex.axis = plotAxisCex
+  )  
   foo <- dev.off()
   cat(paste0("... written: ", outFile, "\n"))
   

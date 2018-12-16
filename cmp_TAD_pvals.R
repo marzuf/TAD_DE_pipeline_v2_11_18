@@ -11,7 +11,8 @@ cat("> START: cmp_TAD_pvals.R\n")
 SSHFS <- F
 setDir <- ifelse(SSHFS, "/media/electron", "")
 
-pipFold <- file.path(setDir, "/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2_TopDom/OUTPUT_FOLDER")
+#pipFold <- file.path(setDir, "/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2_TopDom/OUTPUT_FOLDER")
+pipFold <- file.path(setDir, "/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2_TopDom")
 
 outFold <- "CMP_TAD_PVALS"
 system(paste0("mkdir -p ", outFold))
@@ -26,6 +27,8 @@ myWidth <- ifelse(plotType == "png", 400, 7)
 
 pvalThresh <- 0.05
 
+plotCex <- 1.2
+
 gene2tadFile <- file.path(setDir, 
                        "/mnt/ed4/marie/gene_data_final/consensus_TopDom_covThresh_r0.6_t80000_v0_w-1_final/genes2tad/all_genes_positions.txt") 
 
@@ -37,13 +40,33 @@ gene2tad_vect <- setNames(gene2tad_DT$region, gene2tad_DT$entrezID)
 # /mnt/ed4/marie/scripts/TAD_DE_pipeline_v2_TopDom/OUTPUT_FOLDER/TCGAbrca_lum_bas/11_runEmpPvalCombined/emp_pval_combined.Rdata
 
 all_similarCond <- list(
-  c("GSE65540_before_after","GSE66306_before_after"),
-  c("GSE58135_ERpos_tripleNeg", "TCGAbrca_lum_bas"),
-  c("GSE81046_noninf_list", "GSE73765_noninf_list"),
-  c("GSE73765_noninf_salm", "GSE81046_noninf_salm"),
-  c("GSE73765_salm_list", "GSE81046_salm_list")
+  c("OUTPUT_FOLDER/GSE65540_before_after","OUTPUT_FOLDER/GSE66306_before_after"),
+  c("OUTPUT_FOLDER/GSE58135_ERpos_tripleNeg", "OUTPUT_FOLDER/TCGAbrca_lum_bas"),
+  c("OUTPUT_FOLDER/GSE81046_noninf_list", "OUTPUT_FOLDER/GSE73765_noninf_list"),
+  c("OUTPUT_FOLDER/GSE73765_noninf_salm", "OUTPUT_FOLDER/GSE81046_noninf_salm"),
+  c("OUTPUT_FOLDER/GSE73765_salm_list", "OUTPUT_FOLDER/GSE81046_salm_list")
 )
 
+all_similarCond <- list(
+c("OUTPUT_FOLDER/GSE81046_noninf_salm", "OUTPUT_FOLDER_WRONG_FPKM_OTHER_RSEM/GSE81046_noninf_salm")
+)
+
+
+all_similarCond <- list(
+c("OUTPUT_FOLDER_TCGA_RUN1/TCGAbrca_lum_bas", "OUTPUT_FOLDER/TCGAbrca_lum_bas"),
+c("OUTPUT_FOLDER_TCGA_RUN1/TCGAacc_acc_mutCTNNB1", "OUTPUT_FOLDER/TCGAacc_wt_mutCTNNB1"),
+c("OUTPUT_FOLDER_TCGA_RUN1/TCGAcrc_msi_mss", "OUTPUT_FOLDER/TCGAcoad_msi_mss"),
+c("OUTPUT_FOLDER_TCGA_RUN1/TCGAlaml_laml_mutFLT3", "OUTPUT_FOLDER/TCGAlaml_wt_mutFLT3"),
+c("OUTPUT_FOLDER_TCGA_RUN1/TCGAlihc_lihc_mutCTNNB1", "OUTPUT_FOLDER/TCGAlihc_wt_mutCTNNB1"),
+c("OUTPUT_FOLDER_TCGA_RUN1/TCGAluad_luad_mutKRAS", "OUTPUT_FOLDER/TCGAluad_wt_mutKRAS"),
+c("OUTPUT_FOLDER_TCGA_RUN1/TCGApaad_paad_mutKRAS", "OUTPUT_FOLDER/TCGApaad_wt_mutKRAS"),
+c("OUTPUT_FOLDER_TCGA_RUN1/TCGAskcm_skcm_mutBRAF", "OUTPUT_FOLDER/TCGAskcm_wt_mutBRAF"),
+c("OUTPUT_FOLDER_TCGA_RUN1/TCGAskcm_skcm_mutCTNNB1", "OUTPUT_FOLDER/TCGAskcm_wt_mutCTNNB1"),
+c("OUTPUT_FOLDER_TCGA_RUN1/TCGAstad_EBVneg_EBVpos", "OUTPUT_FOLDER/TCGAstad_EBVpos_gs"),
+c("OUTPUT_FOLDER_TCGA_RUN1/TCGAthca_thca_mutBRAF", "OUTPUT_FOLDER/TCGAthca_wt_mutBRAF"),
+c("OUTPUT_FOLDER_TCGA_RUN1/TCGAstad_msi_gs", "OUTPUT_FOLDER/TCGAstad_msi_gs"),
+c("OUTPUT_FOLDER_TCGA_RUN1/TCGAucec_msi_cnl", "OUTPUT_FOLDER/TCGAucec_msi_cnl")
+)
 
 i=1
 for(i in seq_along(all_similarCond)) {
@@ -95,7 +118,7 @@ for(i in seq_along(all_similarCond)) {
   myx <- -log10(all_tad_DT[,1])
   myy <- -log10(all_tad_DT[,2])
   
-  exprDS <- paste0(all_ds, collapse="_")
+  exprDS <- paste0(basename(all_ds), collapse="_")
   
   myTit <- paste0(exprDS, ": TAD pval comparison")
   myxlab <- paste0("-log10 TAD pval ", colnames(all_tad_DT)[1], " (", nIntersectTADs, "/", nTADs[[1]], ")")
@@ -110,7 +133,8 @@ for(i in seq_along(all_similarCond)) {
              xlab=myxlab,
              ylab=myylab,
              pch = 16, cex = 0.7,
-             main = myTit
+             main = myTit,
+            cex.lab = plotCex, cex.axis = plotCex
     )
     mtext(side=3, text = mySub)
     add_curv_fit(x = myx,
@@ -131,7 +155,7 @@ for(i in seq_along(all_similarCond)) {
   
   nintersectSignifTADs <- nrow(all_signifTAD_DT)
   
-  exprDS <- paste0(all_ds, collapse="_")
+  exprDS <- paste0(basename(all_ds), collapse="_")
   
   myTit <- paste0(exprDS, ": TAD pval comparison (signif. TADs only)")
   myxlab <- paste0("-log10 TAD pval ", colnames(all_signifTAD_DT)[1], " (", nintersectSignifTADs, "/", nTADs[[1]], ")")
@@ -146,7 +170,8 @@ for(i in seq_along(all_similarCond)) {
              xlab=myxlab,
              ylab=myylab,
              pch = 16, cex = 0.7,
-             main = myTit
+             main = myTit,
+            cex.lab = plotCex, cex.axis = plotCex
     )
     mtext(side=3, text = mySub)
     add_curv_fit(x = myx,

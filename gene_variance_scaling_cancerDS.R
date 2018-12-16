@@ -1,9 +1,9 @@
-# Rscript gene_variance_cancerDS.R <exprType>
-# Rscript gene_variance_cancerDS.R fpkm
-# Rscript gene_variance_cancerDS.R log2fpkm
-# Rscript gene_variance_cancerDS.R NBvar
-# Rscript gene_variance_cancerDS.R voom
-cat("> START: gene_variance_noTCGA.R\n")
+# Rscript gene_variance_scaling_cancerDS.R <exprType>
+# Rscript gene_variance_scaling_cancerDS.R fpkm
+# Rscript gene_variance_scaling_cancerDS.R log2fpkm
+# Rscript gene_variance_scaling_cancerDS.R NBvar
+# Rscript gene_variance_scaling_cancerDS.R voom
+cat("> START: gene_variance_scaling_cancerDS.R\n")
 
 SSHFS <- FALSE
 setDir <- ifelse(SSHFS, "/media/electron", "")
@@ -28,12 +28,13 @@ head(score_DT)
 dataset_proc_colors <- setNames(score_DT$proc_col, score_DT$dataset)
 length(dataset_proc_colors)
 
-#cancerDS <- score_DT$dataset[score_DT$process_short == "cancer"]
+cancerDS <- score_DT$dataset[score_DT$process_short == "cancer"]
 
 registerDoMC(ifelse(SSHFS,2,40))
 
 correctTCGA_factor <- 10^6
 # I used scaled estimates -> similar to FPKM, but not multiplied by 10^6
+
 
 args <- commandArgs(trailingOnly = TRUE)
 # stopifnot(length(args) > 0)
@@ -74,23 +75,19 @@ all_setting_files <- list.files(settingFolder, full.names=T)
 all_setting_files <- all_setting_files[grep(".R$", all_setting_files)]
 stopifnot(length(all_setting_files) > 0)
 
-outFold <- file.path(paste0("GENE_VARIANCE_noTCGA"), toupper(exprType))
+outFold <- file.path(paste0("GENE_VARIANCE_SCALING_cancerDS"), toupper(exprType))
 system(paste0("mkdir -p ", outFold))
+
+logFile <- file.path(outFold, "gene_variance_logFile.txt")
+if(SSHFS) logFile <- ""
+if(!SSHFS) system(paste0("rm -f ", logFile))
 
 plotType <- "svg"
 myHeight <- ifelse(plotType == "png", 400, 7)
 myWidth <- ifelse(plotType == "png", 400, 7)
 
-logFile <- file.path(outFold, "gene_variance_noTCGA_logFile.txt")
-if(SSHFS) logFile <- ""
-if(!SSHFS) system(paste0("rm -f ", logFile))
-
-
-# all_setting_files <- all_setting_files[1:5]
-
 # return NULL if file not found ??? [if yes -> build table skipping missing files, otherwise raise error and stop]
 returnNull <-  FALSE
-
 
 txt <- paste0("... exprType\t=\t", exprType, "\n")
 printAndLog(txt, logFile)
@@ -102,23 +99,23 @@ txt <- paste0("... returnNull\t=\t", as.character(returnNull), "\n")
 printAndLog(txt, logFile)
 
 
+# all_setting_files <- all_setting_files[1:5]
+
 if(buildTable) {
   all_ds_geneVarDT <- foreach(ds_file = all_setting_files, .combine="rbind") %dopar% {
   
-
-    if(returnNull) {if(!file.exists(ds_file)) return(NULL)} else {stopifnot(file.exists(ds_file))}
+    stopifnot(file.exists(ds_file))
     cat("... source settingFile", basename(ds_file), "\n")
     source(ds_file)
   
     curr_ds <- basename(pipOutFold)
     cat("... START", curr_ds, "\n")
 
-#    if(! curr_ds %in% cancerDS) return(NULL)
-    if(grepl("^TCGA", curr_ds)) return(NULL)
+    if(! curr_ds %in% cancerDS) return(NULL)
   
     ds_pipFolder <- file.path(pipMainFolder, pipOutFold)
-
-    if(returnNull) {if(!file.exists(ds_pipFolder)) return(NULL)} else {stopifnot(file.exists(ds_pipFolder))}
+    cat(ds_pipFolder,"\n")
+    stopifnot(file.exists(ds_pipFolder))
     
     cat("... load samp1\n")
     samp1 <- eval(parse(text = load(file.path(setDir, sample1_file))))
@@ -150,11 +147,6 @@ if(buildTable) {
     
     curr_exprDT <- exprDT[rownames(exprDT) %in% names(geneList), c(samp1,samp2)]  
     stopifnot(is.numeric(curr_exprDT[1,1]))
-
-    if(grepl("TCGA", curr_ds)) {
-      cat("!!! For TCGA data, correctTCGA_factor = ", correctTCGA_factor, "\n")
-      curr_exprDT <- curr_exprDT * correctTCGA_factor
-    }
     
     if(exprType == "log2fpkm") {
       curr_exprDT <- log2(curr_exprDT + 1)
@@ -175,6 +167,10 @@ if(buildTable) {
           
         stopifnot(is.numeric(curr_exprDT[1,1]))
       }
+
+    # rescale by the 75th quantile
+    quantileValue <- as.numeric(quantile(as.numeric(as.matrix(curr_exprDT)), probs=0.75, na.rm=T))
+    curr_exprDT <- curr_exprDT/quantileValue
     
     geneVar <- apply(curr_exprDT, 1,  var, na.rm=T)
     geneVar <- sort(geneVar, decreasing = TRUE)
@@ -218,10 +214,9 @@ aucFCC <- foreach(curr_ds = all_ds, .combine='c') %dopar% {
   ### RETRIEVE FCC
   step17_fold <- file.path(dsFold, curr_ds, "170_score_auc_pval_withShuffle")
   aucFCC_file <- file.path(step17_fold, "allratio_auc_pval.Rdata")
-  if(returnNull) {if(!file.exists(aucFCC_file)) return(NULL)} else {stopifnot(file.exists(aucFCC_file))}
+  stopifnot(file.exists(aucFCC_file))
   aucCoexprDist_file <- file.path(setDir, paste0("/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2_", "TopDom"),
                                   "AUC_COEXPRDIST_SORTNODUP", curr_ds, "auc_values.Rdata")
-  if(returnNull) {if(!file.exists(aucCoexprDist_file)) return(NULL)} else {stopifnot(file.exists(aucCoexprDist_file))}
   stopifnot(file.exists(aucCoexprDist_file))
   all_ratios <- eval(parse(text = load(aucFCC_file)))
   aucFCC <- as.numeric(all_ratios["prodSignedRatio_auc_permGenes"])
@@ -231,10 +226,10 @@ aucFCC <- foreach(curr_ds = all_ds, .combine='c') %dopar% {
 names(aucFCC) <- all_ds
 
 stopifnot(names(aucFCC) %in% names(dataset_proc_colors) )
-curr_colors <- dataset_proc_colors[names(aucFCC)]
+# curr_colors <- dataset_proc_colors[names(aucFCC)]
 
-#curr_colors <- as.character(cancer_subColors[as.character(cancer_subAnnot[names(aucFCC)])])
-#stopifnot(!is.na(curr_colors))
+curr_colors <- as.character(cancer_subColors[as.character(cancer_subAnnot[names(aucFCC)])])
+stopifnot(!is.na(curr_colors))
 
 aucCoexprDist <- foreach(curr_ds = all_ds, .combine='c') %dopar% {
   ### RETRIEVE FCC
@@ -309,10 +304,6 @@ for(auc_type in all_auc) {
   cat("... start", auc_type, "\n")
   
   curr_auc <- eval(parse(text = paste0("auc", auc_type)))
-
-  curr_auc <- (curr_auc-1)*100
-
-
   stopifnot(all_ds_geneVarDT$dataset %in% names(curr_auc))
   all_ds_geneVarDT[, auc_type] <- curr_auc[all_ds_geneVarDT$dataset]
 
@@ -355,11 +346,11 @@ for(auc_type in all_auc) {
        
        
        pch = 16, cex = 0.7,
-       ylab = paste0("% AUC increase - ", auc_type),
+       ylab = paste0("% AUC increase ", auc_type),
        # xlab = "mean most var (log10)",
        xlab = paste0("Mean most var. [log10] top ", nTopLast, " most variant genes\n(", exprTypeName, ")"),
        main = myTit,
-cex.axis = cexAxis, cex.lab = cexLab
+       cex.axis = cexAxis, cex.lab = cexLab
   )
   text(x = log10(all_ds_geneVarDT$meanMostVar),
        y = all_ds_geneVarDT[, auc_type],
@@ -423,10 +414,6 @@ for(auc_type in all_auc) {
   
   
   curr_auc <- eval(parse(text = paste0("auc", auc_type)))
-
-  curr_auc <- (curr_auc-1)*100
-
-
   stopifnot(all_ds_geneVarDT$dataset %in% names(curr_auc))
   all_ds_geneVarDT[, auc_type] <- curr_auc[all_ds_geneVarDT$dataset]
   
@@ -531,9 +518,9 @@ cex.axis = cexAxis, cex.lab = cexLab
   my_colors <- my_colors[my_colors %in% curr_colors]
   
   legend("topleft",
-         legend=names(my_colors),
+         legend=unique(cancer_subAnnot[names(aucFCC)]),
          lty=1,
-         col=my_colors,
+         col = unique(curr_colors),
          lwd = 5,
          bty="n",
          cex = 0.7)
