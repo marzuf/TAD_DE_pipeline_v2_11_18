@@ -25,7 +25,8 @@ vdHeight <- 7
 vdWidth <- 7
 
 pvalSelect <- 0.1
-withPvalSelect <- TRUE
+withPvalSelect <- F
+
 
 source( file.path(setDir, paste0("/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2_coreg"), "set_dataset_colors.R"))
 head(score_DT)
@@ -120,7 +121,7 @@ if(buildTable){
 
   } # end iterating datasets
 
-  # rownames(all_ds_TAD_ranks_DT) <- all_ds
+  rownames(all_ds_TAD_ranks_DT) <- all_ds
       
   outFile <-     file.path(outFold, "all_ds_TAD_ranks_DT.Rdata")
   save(all_ds_TAD_ranks_DT, file = outFile)
@@ -187,6 +188,18 @@ canberra_stability(rank_commonTADs_DT[! grepl("^TCGA", rownames(rank_commonTADs_
 #   [1] 0.9513543
 
 ### with pval select 0.05
+
+
+######################################################################################
+######################################################################################
+######################################################################################
+load("DATASET_CANBERRA_STABILITY/all_ds_TAD_ranks_DT.Rdata")
+
+tadOrder <- names(sort(colMeans(all_ds_TAD_ranks_DT)))
+image(t(all_ds_TAD_ranks_DT[,tadOrder]))
+
+tadOrder_TCGA <- names(sort(colMeans(all_ds_TAD_ranks_DT[grepl("TCGA", rownames(all_ds_TAD_ranks_DT)),])))
+image(t(all_ds_TAD_ranks_DT[grepl("TCGA", rownames(all_ds_TAD_ranks_DT)),tadOrder_TCGA]))
 
 
 ######################################################################################
