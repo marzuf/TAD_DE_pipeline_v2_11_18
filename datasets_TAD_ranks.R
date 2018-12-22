@@ -1,13 +1,14 @@
 startTime <- Sys.time()
-cat(paste0("> START datasets_canberra_stability.R\n"))
+cat(paste0("> START datasets_TAD_ranks.R\n"))
 
-# Rscript datasets_canberra_stability.R
+# Rscript datasets_TAD_ranks.R
 
 source("analysis_utils.R")
 options(scipen=100)
 
 suppressPackageStartupMessages(library(foreach, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE)) 
 suppressPackageStartupMessages(library(doMC, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE)) 
+suppressPackageStartupMessages(library(flux, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE)) 
 
 
 SSHFS <- F
@@ -19,7 +20,7 @@ plotType <- "svg"
 myHeightGG <- 7
 myWidthGG <- 10
 myHeight <- ifelse(plotType == "png", 300, 7)
-myWidth <- myHeight
+myWidth <- myHeight*1.2
 
 vdHeight <- 7
 vdWidth <- 7
@@ -147,7 +148,6 @@ stopifnot(!any(is.na(commonTADs_DT)))
 cat("dim(all_ds_TAD_ranks_DT)\t=\t",dim(all_ds_TAD_ranks_DT), "\n" )
 cat("dim(commonTADs_DT)\t=\t",dim(commonTADs_DT), "\n" )
 
-    
 source("canberra_clean.R")
 
 x = matrix(c(2,4,1,3,0,3,4,1,2,0,2,4,3,0,1), byrow = T, ncol=5)
@@ -194,32 +194,41 @@ canberra_stability(rank_commonTADs_DT[! grepl("^TCGA", rownames(rank_commonTADs_
 #   [1] 0.9513543
 
 ### with pval select 0.05
-
-
-load("DATASETS_TAD_RANKS/all_ds_TAD_ranks_DT.Rdata")
+# load("DATASETS_TAD_RANKS/all_ds_TAD_ranks_DT.Rdata")
 all_ds_TAD_ranks_DT[1:5,1:5]
 
-rankMax = max(all_ds_TAD_ranks_DT, na.rm=T)
+rankMax <- max(all_ds_TAD_ranks_DT, na.rm=T)
 
-plot(NULL, xlim=c(1,rankMax),ylim=c(1,nrow(all_ds_TAD_ranks_DT)))
-
-i=1
+cat(paste0("... start drawing\n"))
+outFile <- file.path(outFold, paste0("all_TADs_cumsum_linePlot.", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myWidth))
+plot(NULL, 
+     xlim=c(1,rankMax),
+     ylim=c(1,nrow(all_ds_TAD_ranks_DT)),
+     main=paste0("cumsum # datasets <= rank"),
+     ylab = paste0("# datasets"),
+     xlab = paste0("TAD rank")
+     )
 for(i in 1:ncol(all_ds_TAD_ranks_DT)) {
   curr_tad_ranks <- all_ds_TAD_ranks_DT[,i]
   rankVect <- 1:rankMax
   cumsum_ranks <- sapply(rankVect, function(x) sum(na.omit(curr_tad_ranks) <= x  ))
   lines(x=rankVect, y= cumsum_ranks)
 }
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
 
-all_auc <- foreach(i = 1:ncol(all_ds_TAD_ranks_DT), .combine='c') %dopar% {
+cat(paste0("... start computing auc\n"))
+all_TADs_auc <- foreach(i = 1:ncol(all_ds_TAD_ranks_DT), .combine='c') %dopar% {
   curr_tad_ranks <- all_ds_TAD_ranks_DT[,i]
   rankVect <- 1:rankMax
   cumsum_ranks <- sapply(rankVect, function(x) sum(na.omit(curr_tad_ranks) <= x  ))
-  lines(x=rankVect, y= cumsum_ranks)
   curr_auc <- auc(x = rankVect, y = cumsum_ranks)
   curr_auc
 }
-
+outFile <- file.path(outFold, "all_TADs_auc.Rdata")
+save(all_TADs_auc, file = outFile)
+cat(paste0("... written: ", outFile, "\n"))
 
 ######################################################################################
 ######################################################################################

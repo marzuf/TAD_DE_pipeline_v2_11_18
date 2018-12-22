@@ -19,7 +19,7 @@ plotType <- "svg"
 myHeightGG <- 7
 myWidthGG <- 10
 myHeight <- ifelse(plotType == "png", 300, 7)
-myWidth <- myHeight
+myWidth <- myHeight*1.2
 
 vdHeight <- 7
 vdWidth <- 7
@@ -193,13 +193,21 @@ canberra_stability(rank_commonTADs_DT[! grepl("^TCGA", rownames(rank_commonTADs_
 ######################################################################################
 ######################################################################################
 ######################################################################################
-load("DATASET_CANBERRA_STABILITY/all_ds_TAD_ranks_DT.Rdata")
+#load("DATASET_CANBERRA_STABILITY/all_ds_TAD_ranks_DT.Rdata")
 
 tadOrder <- names(sort(colMeans(all_ds_TAD_ranks_DT)))
+outFile <- file.path(outFold, paste0("image_matrix_TADrank_datasets.", plotType))
+do.call(plotTyp, list(outFile, height = myHeight, width = myWidth))
 image(t(all_ds_TAD_ranks_DT[,tadOrder]))
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
 
 tadOrder_TCGA <- names(sort(colMeans(all_ds_TAD_ranks_DT[grepl("TCGA", rownames(all_ds_TAD_ranks_DT)),])))
+outFile <- file.path(outFold, paste0("image_matrix_TADrank_TCGAdatasets.", plotType))
+do.call(plotTyp, list(outFile, height = myHeight, width = myWidth))
 image(t(all_ds_TAD_ranks_DT[grepl("TCGA", rownames(all_ds_TAD_ranks_DT)),tadOrder_TCGA]))
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
 
 
 ######################################################################################
