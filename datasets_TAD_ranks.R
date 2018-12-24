@@ -16,7 +16,7 @@ setDir <- ifelse(SSHFS, "/media/electron", "")
 
 buildTable <- T
 
-plotType <- "svg"
+plotType <- "png"
 myHeightGG <- 7
 myWidthGG <- 10
 myHeight <- ifelse(plotType == "png", 300, 7)
@@ -87,9 +87,7 @@ if(buildTable){
     # all_ds_DT <- foreach(curr_ds = topDS, .combine='rbind') %dopar% {
     txt <- paste0("*** START:\t", curr_ds, "\n")
     printAndLog(txt, logFile)
-    
-    
-    
+
     ### RETRIEVE TAD GENES AND PVALUES
     cat("... retrieve top TADs genes\n")
     step11_fold <- file.path(dsFold, curr_ds, "11_runEmpPvalCombined")
@@ -229,6 +227,48 @@ all_TADs_auc <- foreach(i = 1:ncol(all_ds_TAD_ranks_DT), .combine='c') %dopar% {
 outFile <- file.path(outFold, "all_TADs_auc.Rdata")
 save(all_TADs_auc, file = outFile)
 cat(paste0("... written: ", outFile, "\n"))
+
+
+#### DO THE SAME FOR TCGA ONLY
+
+all_ds_TAD_ranks_DT[1:5,1:5]
+
+tcga_ds_TAD_ranks_DT <- all_ds_TAD_ranks_DT[grep("^TCGA", rownames(all_ds_TAD_ranks_DT)),]
+
+rankMax <- max(tcga_ds_TAD_ranks_DT, na.rm=T)
+
+cat(paste0("... start drawing\n"))
+outFile <- file.path(outFold, paste0("tcga_TADs_cumsum_linePlot.", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myWidth))
+plot(NULL, 
+     xlim=c(1,rankMax),
+     ylim=c(1,nrow(tcga_ds_TAD_ranks_DT)),
+     main=paste0("cumsum # datasets <= rank"),
+     ylab = paste0("# datasets"),
+     xlab = paste0("TAD rank")
+)
+for(i in 1:ncol(tcga_ds_TAD_ranks_DT)) {
+  curr_tad_ranks <- tcga_ds_TAD_ranks_DT[,i]
+  rankVect <- 1:rankMax
+  cumsum_ranks <- sapply(rankVect, function(x) sum(na.omit(curr_tad_ranks) <= x  ))
+  lines(x=rankVect, y= cumsum_ranks)
+}
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
+
+cat(paste0("... start computing TCGA auc\n"))
+tcga_TADs_auc <- foreach(i = 1:ncol(tcga_ds_TAD_ranks_DT), .combine='c') %dopar% {
+  curr_tad_ranks <- tcga_ds_TAD_ranks_DT[,i]
+  rankVect <- 1:rankMax
+  cumsum_ranks <- sapply(rankVect, function(x) sum(na.omit(curr_tad_ranks) <= x  ))
+  curr_auc <- auc(x = rankVect, y = cumsum_ranks)
+  curr_auc
+}
+outFile <- file.path(outFold, "tcga_TADs_auc.Rdata")
+save(tcga_TADs_auc, file = outFile)
+cat(paste0("... written: ", outFile, "\n"))
+
+
 
 ######################################################################################
 ######################################################################################
