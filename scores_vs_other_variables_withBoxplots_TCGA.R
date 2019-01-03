@@ -303,6 +303,9 @@ stopifnot(!is.na(datasets_variables_DT$dsTypeLabel))
 
 # all_vars="medianGenesByTAD"
 head(datasets_variables_DT)
+
+stopifnot(all_vars %in% names(titNames))
+
 for(curr_var in all_vars) {
   
   outFile <- file.path(outFold, paste0(curr_var, "_", "cancer_TCGA_boxplot.", plotType))
@@ -311,7 +314,8 @@ for(curr_var in all_vars) {
           data = datasets_variables_DT,
           boxfill = unique(datasets_variables_DT$color),
           main = paste0(curr_var),
-          ylab = paste0(curr_var),
+#          ylab = paste0(curr_var),
+          ylab = paste0(titNames[curr_var]),
           las = 2,
            cex.lab = plotAxisCex, cex.axis = plotAxisCex
 )  
@@ -331,8 +335,10 @@ datasets_variables_DT$dataset <- NULL
 other_vars <- all_vars
 
 titNames <- c(
-  coexprDistAUC="AUC ratio - pairwise coexpr.",
-  fccAUC = "AUC ratio - FCC",
+#  coexprDistAUC="AUC ratio - pairwise coexpr.",
+#  fccAUC = "AUC ratio - FCC",
+  coexprDistAUC="% AUC ratio increase - pairwise coexpr.",
+  fccAUC = "% AUC ratio increase - FCC",
   nSamp1 = "# samples (cond1)",
   nSamp2 = "# samples (cond2)",
   nAllSamp = "# samples (all)",
@@ -347,8 +353,10 @@ titNames <- c(
 )
 
 offSets <- c(
-  coexprDistAUC=0.03,
-  fccAUC = 0.03,
+#  coexprDistAUC=0.03,
+#  fccAUC = 0.03,
+  coexprDistAUC=0.03*100,
+  fccAUC = 0.03*100,
   nSamp1 = 150,
   nSamp2 = 150,
   nAllSamp = 150,
@@ -381,6 +389,9 @@ for(ref_var in c("coexprDistAUC", "fccAUC")) {
     
     myx <- datasets_variables_DT[,curr_var]
     myy <- datasets_variables_DT[,ref_var]
+
+    if(curr_var == "coexprDistAUC" | curr_var == "fccAUC") myx <- (myx-1) * 100
+    if(ref_var == "coexprDistAUC" | ref_var == "fccAUC") myy <- (myy-1) * 100
     
     do.call(plotType, list(outFile, height = myHeight, width = myWidth))
     my_plot_function(varX = myx, varY=myy, 

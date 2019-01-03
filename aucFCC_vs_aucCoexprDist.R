@@ -235,8 +235,8 @@ stopifnot(names(all_auc_FCC) == names(all_auc_CoexprDist) )
 stopifnot(names(all_auc_FCC) %in% names(dataset_proc_colors) )
 
 # to plot % of AUC increase
-all_auc_FCC <- (all_auc_FCC-1) * 100
-all_auc_CoexprDist <- (all_auc_CoexprDist-1) * 100
+#all_auc_FCC <- (all_auc_FCC-1) * 100 # already done earlier
+#all_auc_CoexprDist <- (all_auc_CoexprDist-1) * 100 # already done earlier
 
 # myxlab <- "AUC ratio FCC"
 # myylab <- "AUC ratio coexpr."

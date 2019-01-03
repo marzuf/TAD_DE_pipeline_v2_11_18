@@ -28,6 +28,10 @@ vdWidth <- 7
 pvalSelect <- 0.1
 withPvalSelect <- F
 
+nTopToPlot = 5
+
+computeAUC <- TRUE
+cat("!!! compute AUC = ", as.character(computeAUC), "\n")
 
 source( file.path(setDir, paste0("/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2_coreg"), "set_dataset_colors.R"))
 head(score_DT)
@@ -62,6 +66,9 @@ all_ds <- list.files(dsFold)
 stopifnot(length(all_ds) > 0)
 
 #all_ds <- all_ds[all_ds %in% run1_DS]
+
+txt <- paste0("... computeAUC:\t", as.character(computeAUC), "\n")
+printAndLog(txt, logFile)
 
 txt <- paste0("... found # datasets:\t", length(all_ds), "\n")
 printAndLog(txt, logFile)
@@ -197,6 +204,8 @@ all_ds_TAD_ranks_DT[1:5,1:5]
 
 rankMax <- max(all_ds_TAD_ranks_DT, na.rm=T)
 
+#### DRAW THE CURVES
+
 cat(paste0("... start drawing\n"))
 outFile <- file.path(outFold, paste0("all_TADs_cumsum_linePlot.", plotType))
 do.call(plotType, list(outFile, height=myHeight, width=myWidth))
@@ -216,17 +225,53 @@ for(i in 1:ncol(all_ds_TAD_ranks_DT)) {
 foo <- dev.off()
 cat(paste0("... written: ", outFile, "\n"))
 
-cat(paste0("... start computing auc\n"))
-all_TADs_auc <- foreach(i = 1:ncol(all_ds_TAD_ranks_DT), .combine='c') %dopar% {
-  curr_tad_ranks <- all_ds_TAD_ranks_DT[,i]
+if(computeAUC) {
+  cat(paste0("... start computing auc\n"))
+  all_TADs_auc <- foreach(i = 1:ncol(all_ds_TAD_ranks_DT), .combine='c') %dopar% {
+    curr_tad_ranks <- all_ds_TAD_ranks_DT[,i]
+    rankVect <- 1:rankMax
+    cumsum_ranks <- sapply(rankVect, function(x) sum(na.omit(curr_tad_ranks) <= x  ))
+    curr_auc <- auc(x = rankVect, y = cumsum_ranks)
+    curr_auc
+  }
+  names(all_TADs_auc) <- colnames(all_ds_TAD_ranks_DT)
+  outFile <- file.path(outFold, "all_TADs_auc.Rdata")
+  save(all_TADs_auc, file = outFile)
+  cat(paste0("... written: ", outFile, "\n"))
+} else {
+  outFile <- file.path(outFold, "all_TADs_auc.Rdata")
+  all_TADs_auc <- eval(parse(text = load(outFile)))
+}
+
+############ DRAW ONLY TOP TADS
+
+stopifnot(nTopToPlot <= length(all_TADs_auc))
+topTADs <- names(sort(all_TADs_auc, decreasing = TRUE)[1:nTopToPlot])
+stopifnot(topTADs %in% colnames(all_ds_TAD_ranks_DT) )
+top_all_ds_TAD_ranks_DT <- all_ds_TAD_ranks_DT[, topTADs]
+
+cat(paste0("... start drawing - only top AUC TADs \n"))
+outFile <- file.path(outFold, paste0("all_TADs_cumsum_linePlot_AUCtop", nTop, ".", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myWidth))
+plot(NULL, 
+     xlim=c(1,rankMax),
+     ylim=c(1,nrow(top_all_ds_TAD_ranks_DT)),
+     main=paste0("cumsum # datasets <= rank"),
+     ylab = paste0("# datasets"),
+     xlab = paste0("TAD rank")
+)
+for(i in 1:ncol(top_all_ds_TAD_ranks_DT)) {
+  curr_tad_ranks <- top_all_ds_TAD_ranks_DT[,i]
   rankVect <- 1:rankMax
   cumsum_ranks <- sapply(rankVect, function(x) sum(na.omit(curr_tad_ranks) <= x  ))
-  curr_auc <- auc(x = rankVect, y = cumsum_ranks)
-  curr_auc
+  lines(x=rankVect, y= cumsum_ranks, col=i)
 }
-outFile <- file.path(outFold, "all_TADs_auc.Rdata")
-save(all_TADs_auc, file = outFile)
+
+legend("topleft", lty=-1,bty="n", cex=0.7, legend = topTADs, col=1:length(topTADs)  )
+
+foo <- dev.off()
 cat(paste0("... written: ", outFile, "\n"))
+
 
 
 #### DO THE SAME FOR TCGA ONLY
@@ -256,17 +301,54 @@ for(i in 1:ncol(tcga_ds_TAD_ranks_DT)) {
 foo <- dev.off()
 cat(paste0("... written: ", outFile, "\n"))
 
-cat(paste0("... start computing TCGA auc\n"))
-tcga_TADs_auc <- foreach(i = 1:ncol(tcga_ds_TAD_ranks_DT), .combine='c') %dopar% {
-  curr_tad_ranks <- tcga_ds_TAD_ranks_DT[,i]
+if(computeAUC) {
+  cat(paste0("... start computing TCGA auc\n"))
+  tcga_TADs_auc <- foreach(i = 1:ncol(tcga_ds_TAD_ranks_DT), .combine='c') %dopar% {
+    curr_tad_ranks <- tcga_ds_TAD_ranks_DT[,i]
+    rankVect <- 1:rankMax
+    cumsum_ranks <- sapply(rankVect, function(x) sum(na.omit(curr_tad_ranks) <= x  ))
+    curr_auc <- auc(x = rankVect, y = cumsum_ranks)
+    curr_auc
+  }
+  outFile <- file.path(outFold, "tcga_TADs_auc.Rdata")
+  save(tcga_TADs_auc, file = outFile)
+  cat(paste0("... written: ", outFile, "\n"))
+} else {
+  outFile <- file.path(outFold, "tcga_TADs_auc.Rdata")
+  tcga_TADs_auc <- eval(parse(text = load(outFile)))
+}
+
+
+############ DRAW ONLY TOP TADS - TCGA ONLY
+
+stopifnot(nTopToPlot <= length(tcga_TADs_auc))
+tcga_ topTADs <- names(sort(tcga_TADs_auc, decreasing = TRUE)[1:nTopToPlot])
+stopifnot(tcga_ topTADs %in% colnames(tcga_ds_TAD_ranks_DT) )
+top_tcga_ds_TAD_ranks_DT <- tcga_ds_TAD_ranks_DT[, tcga_ topTADs]
+
+cat(paste0("... start drawing - only top AUC TADs \n"))
+outFile <- file.path(outFold, paste0("tcga_TADs_cumsum_linePlot_AUCtop", nTop, ".", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myWidth))
+plot(NULL, 
+     xlim=c(1,rankMax),
+     ylim=c(1,nrow(top_tcga_ds_TAD_ranks_DT)),
+     main=paste0("cumsum # datasets <= rank"),
+     ylab = paste0("# datasets"),
+     xlab = paste0("TAD rank")
+)
+for(i in 1:ncol(top_tcga_ds_TAD_ranks_DT)) {
+  curr_tad_ranks <- top_tcga_ds_TAD_ranks_DT[,i]
   rankVect <- 1:rankMax
   cumsum_ranks <- sapply(rankVect, function(x) sum(na.omit(curr_tad_ranks) <= x  ))
-  curr_auc <- auc(x = rankVect, y = cumsum_ranks)
-  curr_auc
+  lines(x=rankVect, y= cumsum_ranks, col=i)
 }
-outFile <- file.path(outFold, "tcga_TADs_auc.Rdata")
-save(tcga_TADs_auc, file = outFile)
+
+legend("topleft", lty=-1,bty="n", cex=0.7, legend = tcga_ topTADs, col=1:length(tcga_ topTADs)  )
+
+foo <- dev.off()
 cat(paste0("... written: ", outFile, "\n"))
+
+
 
 
 

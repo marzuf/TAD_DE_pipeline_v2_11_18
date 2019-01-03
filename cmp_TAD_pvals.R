@@ -39,6 +39,8 @@ gene2tad_vect <- setNames(gene2tad_DT$region, gene2tad_DT$entrezID)
 
 # /mnt/ed4/marie/scripts/TAD_DE_pipeline_v2_TopDom/OUTPUT_FOLDER/TCGAbrca_lum_bas/11_runEmpPvalCombined/emp_pval_combined.Rdata
 
+### !!! TO ADAPT X AND Y LABS !!!
+
 all_similarCond <- list(
   c("OUTPUT_FOLDER/GSE65540_before_after","OUTPUT_FOLDER/GSE66306_before_after"),
   c("OUTPUT_FOLDER/GSE58135_ERpos_tripleNeg", "OUTPUT_FOLDER/TCGAbrca_lum_bas"),
