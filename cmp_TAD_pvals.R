@@ -96,6 +96,8 @@ for(i in seq_along(all_similarCond)) {
     list(signifTADs=signifTADs, tadpvals=tadpvals)
   }
   
+  stopifnot(length(all_ds_TADs) == 2)
+  
   ################################################# ALL TADs 
   intersectTADs <- Reduce(intersect, lapply(all_ds_TADs, function(x) names(x[["tadpvals"]])))
   
@@ -122,13 +124,30 @@ for(i in seq_along(all_similarCond)) {
   
   exprDS <- paste0(basename(all_ds), collapse="_")
   
-  myTit <- paste0(exprDS, ": TAD pval comparison")
-  myxlab <- paste0("-log10 TAD pval ", colnames(all_tad_DT)[1], " (", nIntersectTADs, "/", nTADs[[1]], ")")
-  myylab <- paste0("-log10 TAD pval ", colnames(all_tad_DT)[2], " (", nIntersectTADs, "/", nTADs[[2]], ")")
-  mySub <- paste0(all_ds[1], " vs. ", all_ds[2])
+  # colnames look like: OUTPUT_FOLDER/GSE65540_before_after, OUTPUT_FOLDER_TCGA_RUN1/GSE65540_before_after or GSE65540_before_after
+  ds_folder1 <- gsub("_", " ", gsub("OUTPUT_FOLDER", "", dirname(colnames(all_tad_DT)[1])))
+  ds_folder1 <- ifelse(ds_folder1 == "", "default", ds_folder1)
+  ds_name1 <- basename(colnames(all_tad_DT)[1])
+  lab1 <- paste0(ds_name1, " (", ds_folder1, ")")
+  # GSE65540_before_after (default), 
+  
+  ds_folder2 <- gsub("_", " ", gsub("OUTPUT_FOLDER", "", dirname(colnames(all_tad_DT)[2])))
+  ds_folder2 <- ifelse(ds_folder2 == "", "default", ds_folder2)
+  ds_name2 <- basename(colnames(all_tad_DT)[2])
+  lab2 <- paste0(ds_name2, " (", ds_folder2, ")")
+  
+  # myTit <- paste0(exprDS, ": TAD pval comparison")
+  myTit <- paste0("TAD pval comparison")
+  # myxlab <- paste0("-log10 TAD pval ", colnames(all_tad_DT)[1], " (", nIntersectTADs, "/", nTADs[[1]], ")")
+  # myylab <- paste0("-log10 TAD pval ", colnames(all_tad_DT)[2], " (", nIntersectTADs, "/", nTADs[[2]], ")")
+  myxlab <- paste0("-log10 TAD pval ", lab1, " (", nIntersectTADs, "/", nTADs[[1]], ")")
+  myylab <- paste0("-log10 TAD pval ", lab2, " (", nIntersectTADs, "/", nTADs[[2]], ")")
+  # mySub <- paste0(all_ds[1], " vs. ", all_ds[2])
+  mySub <- paste0(lab1, " vs. ", lab2)
   
   if(length(myx) > 1) {
-    outFile <- file.path(outFold, paste0(exprDS, "_tad_pval_density.", plotType))
+    # outFile <- file.path(outFold, paste0(exprDS, "_tad_pval_density.", plotType))
+    outFile <- file.path(outFold, paste0(lab1,"_vs_", lab2, "_tad_pval_density.", plotType))
     do.call(plotType, list(outFile, height=myHeight, width=myWidth))
     densplot(x=myx,
              y=myy,
@@ -159,13 +178,18 @@ for(i in seq_along(all_similarCond)) {
   
   exprDS <- paste0(basename(all_ds), collapse="_")
   
-  myTit <- paste0(exprDS, ": TAD pval comparison (signif. TADs only)")
-  myxlab <- paste0("-log10 TAD pval ", colnames(all_signifTAD_DT)[1], " (", nintersectSignifTADs, "/", nTADs[[1]], ")")
-  myylab <- paste0("-log10 TAD pval ", colnames(all_signifTAD_DT)[2], " (", nintersectSignifTADs, "/", nTADs[[2]], ")")
-  mySub <- paste0(all_ds[1], " vs. ", all_ds[2])
+  # myTit <- paste0(exprDS, ": TAD pval comparison (signif. TADs only)")
+  myTit <- paste0("TAD pval comparison (signif. TADs only)")
+  # myxlab <- paste0("-log10 TAD pval ", colnames(all_signifTAD_DT)[1], " (", nintersectSignifTADs, "/", nTADs[[1]], ")")
+  # myylab <- paste0("-log10 TAD pval ", colnames(all_signifTAD_DT)[2], " (", nintersectSignifTADs, "/", nTADs[[2]], ")")
+  myxlab <- paste0("-log10 TAD pval ", lab1, " (", nintersectSignifTADs, "/", nTADs[[1]], ")")
+  myylab <- paste0("-log10 TAD pval ", lab2, " (", nintersectSignifTADs, "/", nTADs[[2]], ")")
+  # mySub <- paste0(all_ds[1], " vs. ", all_ds[2])
+  mySub <- paste0(lab1, " vs. ", lab2)
   
   if(length(myx) > 1) {
-    outFile <- file.path(outFold, paste0(exprDS, "_signifTAD_pval_density.", plotType))
+    # outFile <- file.path(outFold, paste0(exprDS, "_signifTAD_pval_density.", plotType))
+    outFile <- file.path(outFold, paste0(lab1, "_vs_", lab2, "_signifTAD_pval_density.", plotType))
     do.call(plotType, list(outFile, height=myHeight, width=myWidth))
     densplot(x=myx,
              y=myy,

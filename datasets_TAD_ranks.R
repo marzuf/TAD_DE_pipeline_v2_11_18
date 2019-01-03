@@ -251,7 +251,7 @@ stopifnot(topTADs %in% colnames(all_ds_TAD_ranks_DT) )
 top_all_ds_TAD_ranks_DT <- all_ds_TAD_ranks_DT[, topTADs]
 
 cat(paste0("... start drawing - only top AUC TADs \n"))
-outFile <- file.path(outFold, paste0("all_TADs_cumsum_linePlot_AUCtop", nTop, ".", plotType))
+outFile <- file.path(outFold, paste0("all_TADs_cumsum_linePlot_AUCtop", nTopToPlot, ".", plotType))
 do.call(plotType, list(outFile, height=myHeight, width=myWidth))
 plot(NULL, 
      xlim=c(1,rankMax),
@@ -327,7 +327,7 @@ stopifnot(tcga_ topTADs %in% colnames(tcga_ds_TAD_ranks_DT) )
 top_tcga_ds_TAD_ranks_DT <- tcga_ds_TAD_ranks_DT[, tcga_ topTADs]
 
 cat(paste0("... start drawing - only top AUC TADs \n"))
-outFile <- file.path(outFold, paste0("tcga_TADs_cumsum_linePlot_AUCtop", nTop, ".", plotType))
+outFile <- file.path(outFold, paste0("tcga_TADs_cumsum_linePlot_AUCtop", nTopToPlot, ".", plotType))
 do.call(plotType, list(outFile, height=myHeight, width=myWidth))
 plot(NULL, 
      xlim=c(1,rankMax),
