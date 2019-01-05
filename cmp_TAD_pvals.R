@@ -130,12 +130,16 @@ for(i in seq_along(all_similarCond)) {
   ds_name1 <- basename(colnames(all_tad_DT)[1])
   lab1 <- paste0(ds_name1, " (", ds_folder1, ")")
   # GSE65540_before_after (default), 
-  
+  lab1_filename <- gsub("__", "_", gsub("\\(|\\)", "_",gsub(" ", "", lab1)))
+  lab1_filename <- gsub("\\(|\\)", "_",gsub(" ", "", lab1))
+
   ds_folder2 <- gsub("_", " ", gsub("OUTPUT_FOLDER", "", dirname(colnames(all_tad_DT)[2])))
   ds_folder2 <- ifelse(ds_folder2 == "", "default", ds_folder2)
   ds_name2 <- basename(colnames(all_tad_DT)[2])
   lab2 <- paste0(ds_name2, " (", ds_folder2, ")")
-  
+  lab2_filename <- gsub("__", "_", gsub("\\(|\\)", "_",gsub(" ", "", lab2)))
+  lab2_filename <- gsub("\\(|\\)", "_",gsub(" ", "", lab2))
+
   # myTit <- paste0(exprDS, ": TAD pval comparison")
   myTit <- paste0("TAD pval comparison")
   # myxlab <- paste0("-log10 TAD pval ", colnames(all_tad_DT)[1], " (", nIntersectTADs, "/", nTADs[[1]], ")")
@@ -147,7 +151,7 @@ for(i in seq_along(all_similarCond)) {
   
   if(length(myx) > 1) {
     # outFile <- file.path(outFold, paste0(exprDS, "_tad_pval_density.", plotType))
-    outFile <- file.path(outFold, paste0(lab1,"_vs_", lab2, "_tad_pval_density.", plotType))
+    outFile <- file.path(outFold, paste0(lab1_filename,"vs_",lab2_filename, "tad_pval_density.", plotType))
     do.call(plotType, list(outFile, height=myHeight, width=myWidth))
     densplot(x=myx,
              y=myy,
@@ -189,7 +193,7 @@ for(i in seq_along(all_similarCond)) {
   
   if(length(myx) > 1) {
     # outFile <- file.path(outFold, paste0(exprDS, "_signifTAD_pval_density.", plotType))
-    outFile <- file.path(outFold, paste0(lab1, "_vs_", lab2, "_signifTAD_pval_density.", plotType))
+    outFile <- file.path(outFold, paste0(lab1_filename, "vs_", lab2_filename, "signifTAD_pval_density.", plotType))
     do.call(plotType, list(outFile, height=myHeight, width=myWidth))
     densplot(x=myx,
              y=myy,
