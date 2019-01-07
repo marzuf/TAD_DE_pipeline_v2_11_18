@@ -198,6 +198,21 @@ mtext(side=3, text=paste0("# TADs=", length(allDS_nSignif_byTADs)))
 foo <- dev.off()
 cat(paste0("... written: ", outFile, "\n"))
 
+stopifnot(length(allDS_nSignif_byTADs) == length(tcgaDS_nSignif_byTADs))
+outFile <- file.path(outFold, paste0("nbr_tcga_vs_all_ds_in_which_signif_densplot.", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myHeight))
+densplot(x=allDS_nSignif_byTADs, 
+     y=tcgaDS_nSignif_byTADs,
+     cex.axis=plotCex, cex.lab=plotCex,
+     pch=16, cex=0.7,
+     main = "# signif. all vs. TCGA datasets",
+     xlab=paste0("# datasets where signif. (all datasets, n=", nrow(all_ds_TAD_pvals_DT), ")"),
+     ylab =paste0("# datasets where signif. (TCGA datasets, n=", nrow(tcga_ds_TAD_pvals_DT), ")")
+)
+mtext(side=3, text=paste0("# TADs=", length(allDS_nSignif_byTADs)))
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
+
 # 
 # commonTADs_DT <- all_ds_TAD_pvals_DT[,apply(all_ds_TAD_pvals_DT, 2,function(x) !any(is.na(x)))]
 # stopifnot(!any(is.na(commonTADs_DT)))

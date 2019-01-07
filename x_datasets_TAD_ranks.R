@@ -14,9 +14,9 @@ suppressPackageStartupMessages(library(flux, warn.conflicts = FALSE, quietly = T
 SSHFS <- F
 setDir <- ifelse(SSHFS, "/media/electron", "")
 
-buildTable <- FALSE
+buildTable <- F
 
-plotType <- "svg"
+plotType <- "png"
 myHeightGG <- 7
 myWidthGG <- 10
 myHeight <- ifelse(plotType == "png", 300, 7)
@@ -30,11 +30,8 @@ withPvalSelect <- F
 
 nTopToPlot = 5
 
-computeAUC <- FALSE
+computeAUC <- TRUE
 cat("!!! compute AUC = ", as.character(computeAUC), "\n")
-
-drawLines <- FALSE
-cat("!!! draw lines = ", as.character(drawLines), "\n")
 
 source( file.path(setDir, paste0("/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2_coreg"), "set_dataset_colors.R"))
 head(score_DT)
@@ -208,29 +205,26 @@ all_ds_TAD_ranks_DT[1:5,1:5]
 rankMax <- max(all_ds_TAD_ranks_DT, na.rm=T)
 
 #### DRAW THE CURVES
-if(drawLines){
-  cat(paste0("... start drawing\n"))
-  outFile <- file.path(outFold, paste0("all_TADs_cumsum_linePlot.", plotType))
-  do.call(plotType, list(outFile, height=myHeight, width=myWidth))
-  plot(NULL, 
-       xlim=c(1,rankMax),
-       ylim=c(1,nrow(all_ds_TAD_ranks_DT)),
-       main=paste0("cumsum # datasets <= rank"),
-       ylab = paste0("# datasets"),
-       xlab = paste0("TAD rank")
-  )
-  for(i in 1:ncol(all_ds_TAD_ranks_DT)) {
-    curr_tad_ranks <- all_ds_TAD_ranks_DT[,i]
-    rankVect <- 1:rankMax
-    cumsum_ranks <- sapply(rankVect, function(x) sum(na.omit(curr_tad_ranks) <= x  ))
-    lines(x=rankVect, y= cumsum_ranks)
-  }
-  mtext(paste0("all DS (n = ", nrow(all_ds_TAD_ranks_DT), ")"), side=3)
-  foo <- dev.off()
-  cat(paste0("... written: ", outFile, "\n"))
-  
-}
 
+cat(paste0("... start drawing\n"))
+outFile <- file.path(outFold, paste0("all_TADs_cumsum_linePlot.", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myWidth))
+plot(NULL, 
+     xlim=c(1,rankMax),
+     ylim=c(1,nrow(all_ds_TAD_ranks_DT)),
+     main=paste0("cumsum # datasets <= rank"),
+     ylab = paste0("# datasets"),
+     xlab = paste0("TAD rank")
+     )
+for(i in 1:ncol(all_ds_TAD_ranks_DT)) {
+  curr_tad_ranks <- all_ds_TAD_ranks_DT[,i]
+  rankVect <- 1:rankMax
+  cumsum_ranks <- sapply(rankVect, function(x) sum(na.omit(curr_tad_ranks) <= x  ))
+  lines(x=rankVect, y= cumsum_ranks)
+}
+mtext(paste0("all DS (n = ", nrow(all_ds_TAD_ranks_DT), ")"), side=3)
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
 
 if(computeAUC) {
   cat(paste0("... start computing auc\n"))
@@ -250,40 +244,47 @@ if(computeAUC) {
   all_TADs_auc <- eval(parse(text = load(outFile)))
 }
 
-############ DRAW ONLY TOP TADS
+############ DRAW ONLY TOP AND LAST TADS
 
 stopifnot(nTopToPlot <= length(all_TADs_auc))
 topTADs <- names(sort(all_TADs_auc, decreasing = TRUE)[1:nTopToPlot])
 stopifnot(topTADs %in% colnames(all_ds_TAD_ranks_DT) )
 top_all_ds_TAD_ranks_DT <- all_ds_TAD_ranks_DT[, topTADs]
 
-if(drawLines){
-  
-  cat(paste0("... start drawing - only top AUC TADs \n"))
-  outFile <- file.path(outFold, paste0("all_TADs_cumsum_linePlot_AUCtop", nTopToPlot, ".", plotType))
-  do.call(plotType, list(outFile, height=myHeight, width=myWidth))
-  plot(NULL, 
-       xlim=c(1,rankMax),
-       ylim=c(1,nrow(top_all_ds_TAD_ranks_DT)),
-       main=paste0("cumsum # datasets <= rank"),
-       ylab = paste0("# datasets"),
-       xlab = paste0("TAD rank")
-  )
-  for(i in 1:ncol(top_all_ds_TAD_ranks_DT)) {
-    curr_tad_ranks <- top_all_ds_TAD_ranks_DT[,i]
-    rankVect <- 1:rankMax
-    cumsum_ranks <- sapply(rankVect, function(x) sum(na.omit(curr_tad_ranks) <= x  ))
-    lines(x=rankVect, y= cumsum_ranks, col=i)
-  }
-  
-  legend("topleft", lty=-1,bty="n", cex=0.7, legend = topTADs, col=1:length(topTADs)  )
-  mtext(paste0("all DS (n = ", nrow(top_all_ds_TAD_ranks_DT), ")"), side=3)
-  
-  foo <- dev.off()
-  cat(paste0("... written: ", outFile, "\n"))
-  
-  
+lastTADs <- names(sort(all_TADs_auc, decreasing = TRUE)[(length(all_TADs_auc)-nTopToPlot+1):length(all_TADs_auc)])
+stopifnot(lastTADs %in% colnames(all_ds_TAD_ranks_DT) )
+last_all_ds_TAD_ranks_DT <- all_ds_TAD_ranks_DT[, lastTADs]
+
+stopifnot(nrow(last_all_ds_TAD_ranks_DT) == nrow(top_all_ds_TAD_ranks_DT) )
+
+cat(paste0("... start drawing - only top and last AUC TADs \n"))
+outFile <- file.path(outFold, paste0("all_TADs_cumsum_linePlot_AUCtopLast", nTopToPlot, ".", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myWidth))
+plot(NULL, 
+     xlim=c(1,rankMax),
+     ylim=c(1,nrow(top_all_ds_TAD_ranks_DT)),
+     main=paste0("cumsum # datasets <= rank"),
+     ylab = paste0("# datasets"),
+     xlab = paste0("TAD rank")
+)
+mtext(paste0("all DS (n = ", nrow(top_all_ds_TAD_ranks_DT), ")"), side=3)
+for(i in 1:ncol(top_all_ds_TAD_ranks_DT)) {
+  curr_tad_ranks <- top_all_ds_TAD_ranks_DT[,i]
+  rankVect <- 1:rankMax
+  cumsum_ranks <- sapply(rankVect, function(x) sum(na.omit(curr_tad_ranks) <= x  ))
+  lines(x=rankVect, y= cumsum_ranks, col=i)
 }
+for(i in 1:ncol(last_all_ds_TAD_ranks_DT)) {
+  curr_tad_ranks <- last_all_ds_TAD_ranks_DT[,i]
+  rankVect <- 1:rankMax
+  cumsum_ranks <- sapply(rankVect, function(x) sum(na.omit(curr_tad_ranks) <= x  ))
+  lines(x=rankVect, y= cumsum_ranks, col=i+nTopToPlot)
+}
+
+legend("topleft", lty=-1,bty="n", cex=0.4, legend = c(topTADs, lastTADs), col=1:(length(topTADs)+length(lastTADs))  )
+
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
 
 
 
@@ -295,32 +296,25 @@ tcga_ds_TAD_ranks_DT <- all_ds_TAD_ranks_DT[grep("^TCGA", rownames(all_ds_TAD_ra
 
 rankMax <- max(tcga_ds_TAD_ranks_DT, na.rm=T)
 
-
-if(drawLines){
-  
-  cat(paste0("... start drawing\n"))
-  outFile <- file.path(outFold, paste0("tcga_TADs_cumsum_linePlot.", plotType))
-  do.call(plotType, list(outFile, height=myHeight, width=myWidth))
-  plot(NULL, 
-       xlim=c(1,rankMax),
-       ylim=c(1,nrow(tcga_ds_TAD_ranks_DT)),
-       main=paste0("cumsum # datasets <= rank"),
-       ylab = paste0("# datasets"),
-       xlab = paste0("TAD rank")
-  )
-  for(i in 1:ncol(tcga_ds_TAD_ranks_DT)) {
-    curr_tad_ranks <- tcga_ds_TAD_ranks_DT[,i]
-    rankVect <- 1:rankMax
-    cumsum_ranks <- sapply(rankVect, function(x) sum(na.omit(curr_tad_ranks) <= x  ))
-    lines(x=rankVect, y= cumsum_ranks)
-  }
-  mtext(paste0("TCGA DS (n = ", nrow(tcga_ds_TAD_ranks_DT), ")"), side=3)
-  
-  foo <- dev.off()
-  
-  cat(paste0("... written: ", outFile, "\n"))
+cat(paste0("... start drawing\n"))
+outFile <- file.path(outFold, paste0("tcga_TADs_cumsum_linePlot.", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myWidth))
+plot(NULL, 
+     xlim=c(1,rankMax),
+     ylim=c(1,nrow(tcga_ds_TAD_ranks_DT)),
+     main=paste0("cumsum # datasets <= rank"),
+     ylab = paste0("# datasets"),
+     xlab = paste0("TAD rank")
+)
+for(i in 1:ncol(tcga_ds_TAD_ranks_DT)) {
+  curr_tad_ranks <- tcga_ds_TAD_ranks_DT[,i]
+  rankVect <- 1:rankMax
+  cumsum_ranks <- sapply(rankVect, function(x) sum(na.omit(curr_tad_ranks) <= x  ))
+  lines(x=rankVect, y= cumsum_ranks)
 }
-
+mtext(paste0("TCGA DS (n = ", nrow(tcga_ds_TAD_ranks_DT), ")"), side=3)
+foo <- dev.off()
+cat(paste0("... written: ", outFile, "\n"))
 
 if(computeAUC) {
   cat(paste0("... start computing TCGA auc\n"))
@@ -341,86 +335,60 @@ if(computeAUC) {
 }
 
 
-############ DRAW ONLY TOP TADS - TCGA ONLY
+############ DRAW ONLY TOP and LAST TADS - TCGA ONLY
 
 stopifnot(nTopToPlot <= length(tcga_TADs_auc))
 tcga_topTADs <- names(sort(tcga_TADs_auc, decreasing = TRUE)[1:nTopToPlot])
-
 cat("tcga_topTADs = ",tcga_topTADs, "\n")
-
 stopifnot(tcga_topTADs %in% colnames(tcga_ds_TAD_ranks_DT) )
 top_tcga_ds_TAD_ranks_DT <- tcga_ds_TAD_ranks_DT[, tcga_topTADs]
 
+
+tcga_lastTADs <- names(sort(tcga_TADs_auc, decreasing = TRUE)[(length(tcga_TADs_auc)-nTopToPlot+1):length(tcga_TADs_auc)])
+cat("tcga_lastTADs = ",tcga_lastTADs, "\n")
+stopifnot(tcga_lastTADs %in% colnames(tcga_ds_TAD_ranks_DT) )
+last_tcga_ds_TAD_ranks_DT <- tcga_ds_TAD_ranks_DT[, tcga_lastTADs]
+
+stopifnot(nrow(top_tcga_ds_TAD_ranks_DT) == nrow(last_tcga_ds_TAD_ranks_DT))
+
 cat("dim(top_tcga_ds_TAD_ranks_DT) = ", dim(top_tcga_ds_TAD_ranks_DT), "\n")
 
-if(drawLines){
-  cat(paste0("... start drawing - only top AUC TADs \n"))
-  outFile <- file.path(outFold, paste0("tcga_TADs_cumsum_linePlot_AUCtop", nTopToPlot, ".", plotType))
-  do.call(plotType, list(outFile, height=myHeight, width=myWidth))
-  plot(NULL, 
-       xlim=c(1,rankMax),
-       ylim=c(1,nrow(top_tcga_ds_TAD_ranks_DT)),
-       main=paste0("cumsum # datasets <= rank"),
-       ylab = paste0("# datasets"),
-       xlab = paste0("TAD rank")
-  )
-  
-  cat("ncol(top_tcga_ds_TAD_ranks_DT) = ", ncol(top_tcga_ds_TAD_ranks_DT), "\n")
-  
-  for(i in 1:ncol(top_tcga_ds_TAD_ranks_DT)) {
-    curr_tad_ranks <- top_tcga_ds_TAD_ranks_DT[,i]
-    rankVect <- 1:rankMax
-    cumsum_ranks <- sapply(rankVect, function(x) sum(na.omit(curr_tad_ranks) <= x  ))
-    lines(x=rankVect, y= cumsum_ranks, col=i)
-  }
-  
-  legend("topleft", lty=-1,bty="n", cex=0.7, legend = tcga_topTADs, col=1:length(tcga_topTADs)  )
-  mtext(paste0("TCGA DS (n = ", nrow(top_tcga_ds_TAD_ranks_DT), ")"), side=3)
-  
-  foo <- dev.off()
-  cat(paste0("... written: ", outFile, "\n"))
+cat(paste0("... start drawing - only top AUC TADs \n"))
+outFile <- file.path(outFold, paste0("tcga_TADs_cumsum_linePlot_AUCtopLast", nTopToPlot, ".", plotType))
+do.call(plotType, list(outFile, height=myHeight, width=myWidth))
+plot(NULL, 
+     xlim=c(1,rankMax),
+     ylim=c(1,nrow(top_tcga_ds_TAD_ranks_DT)),
+     main=paste0("cumsum # datasets <= rank"),
+     ylab = paste0("# datasets"),
+     xlab = paste0("TAD rank")
+)
+mtext(paste0("TCGA DS (n = ", nrow(top_tcga_ds_TAD_ranks_DT), ")"), side=3)
+
+cat("ncol(top_tcga_ds_TAD_ranks_DT) = ", ncol(top_tcga_ds_TAD_ranks_DT), "\n")
+
+for(i in 1:ncol(top_tcga_ds_TAD_ranks_DT)) {
+  curr_tad_ranks <- top_tcga_ds_TAD_ranks_DT[,i]
+  rankVect <- 1:rankMax
+  cumsum_ranks <- sapply(rankVect, function(x) sum(na.omit(curr_tad_ranks) <= x  ))
+  lines(x=rankVect, y= cumsum_ranks, col=i)
 }
 
 
+for(i in 1:ncol(last_tcga_ds_TAD_ranks_DT)) {
+  curr_tad_ranks <- last_tcga_ds_TAD_ranks_DT[,i]
+  rankVect <- 1:rankMax
+  cumsum_ranks <- sapply(rankVect, function(x) sum(na.omit(curr_tad_ranks) <= x  ))
+  lines(x=rankVect, y= cumsum_ranks, col=i+nTopToPlot)
+}
 
-###
-commonTADs <- intersect(names(all_TADs_auc), names(tcga_TADs_auc))
 
-bothAUC <- data.frame(
-  tcga_ds_AUC = tcga_TADs_auc[commonTADs],
-  all_ds_AUC = all_TADs_auc[commonTADs],
-  stringsAsFactors = FALSE
-)
+legend("topleft", lty=-1,bty="n", cex=0.4, legend = c(tcga_topTADs, tcga_lastTADs), col=1:(length(tcga_topTADs)+length(tcga_lastTADs))  )
 
-outFile <- file.path(outFold, paste0("AUC_TCGA_vs_all_datasets.", plotType))
-do.call(plotType, list(outFile, height=myHeight, width=myHeight))
-densplot(
-  x=bothAUC$all_ds_AUC,
-  y=bothAUC$tcga_ds_AUC,
-  xlab="AUC from all DS",
-  ylab="AUC from TCGA DS",
-  main=paste0("Comparison AUC TCGA vs. all datasets"),
-  pch=16, cex=0.7
-)
 foo <- dev.off()
 cat(paste0("... written: ", outFile, "\n"))
 
 
-############ DENSITY TAD ranks AUC
-
-mySub <- paste0("(# all DS = ", nrow(all_ds_TAD_ranks_DT), ";  # TCGA DS = ",nrow(tcga_ds_TAD_ranks_DT), ")")
-
-outFile <- file.path(outFold, paste0("density_TADranks_cumsum.", plotType))
-do.call(plotType, list(outFile, height=myHeight, width=myWidth))
-plot_multiDens(list(
-  all_TADs_auc = all_TADs_auc,
-  tcga_TADs_auc = tcga_TADs_auc
-),
-plotTit = paste0("Cumulative TAD ranking AUC")
-)
-mtext(mySub, side=3)
-foo <- dev.off()
-cat(paste0("... written: ", outFile, "\n"))
 
 
 
